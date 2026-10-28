@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "chinese-novelist": {
+      "source": "PenglongHuang/chinese-novelist-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "5e0a14326763a3d62422a98128eec1e98a7f4065473c6c39187346dadcf29a55"
+    }
+  }
+}
