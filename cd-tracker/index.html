@@ -79,7 +79,7 @@
   td a{color:var(--link);text-decoration:none}
   form.f{padding:12px 20px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 16px}
   form.f label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}
-  form.f input{font:inherit;color:var(--text);padding:8px 10px;border:1px solid #bbb;border-radius:4px}
+  form.f input,form.f select{font:inherit;color:var(--text);padding:8px 10px;border:1px solid #bbb;border-radius:4px}
   form.f .actions{grid-column:1/-1;display:flex;gap:10px;align-items:center}
   .msg{font-size:13px;color:#1a7f37}
   .err{font-size:13px;color:var(--due)}
@@ -105,6 +105,21 @@ const DEFAULT_CDS = [
   { id:"cd3", bank:"Bank of America", tag:"AD", apy:3.45, maturity:"2027-02-18", balance:55503 },
   { id:"cd4", bank:"Bank of America", tag:"AD", apy:3.70, maturity:"2027-05-09", balance:30343 },
 ];
+const DEFAULT_ACCOUNTS = [
+  { id:"a1", type:"checking",   name:"Checking",              institution:"", balance:3621.59,  note:"" },
+  { id:"a2", type:"savings",    name:"Regular Savings - 9459", institution:"", balance:1374.41,  note:"" },
+  { id:"a3", type:"cd",         name:"7 Month CD - 8261",      institution:"", balance:23669.50, note:"" },
+  { id:"a4", type:"credit",     name:"Credit card",           institution:"", balance:851.36,   note:"" },
+  { id:"a5", type:"credit",     name:"Travel rewards card - 6678", institution:"", balance:1848.69, note:"" },
+  { id:"a6", type:"investment", name:"Brokerage account",     institution:"", balance:142.96,   note:"" },
+];
+const TYPES = {
+  checking:  { label:"Checking",                liability:false },
+  savings:   { label:"Savings",                 liability:false },
+  cd:        { label:"Certificates of Deposit", liability:false },
+  investment:{ label:"Investments",             liability:false },
+  credit:    { label:"Credit cards",            liability:true  },
+};
 const ALERT_WARN_DAYS = 30, ALERT_INFO_DAYS = 60;
 
 /* ---------- storage (fails safe) ---------- */
@@ -115,7 +130,9 @@ const store = {
 };
 let ss; try{ ss = sessionStorage; }catch(e){ ss = null; }
 
-let data = store.get("cdp.data") || { cds: structuredClone(DEFAULT_CDS), renewals: [] };
+const freshData = () => ({ cds: structuredClone(DEFAULT_CDS), renewals: [], accounts: structuredClone(DEFAULT_ACCOUNTS) });
+let data = store.get("cdp.data") || freshData();
+if (!Array.isArray(data.accounts)) data.accounts = structuredClone(DEFAULT_ACCOUNTS);
 const save = () => store.set("cdp.data", data);
 
 /* ---------- helpers ---------- */
@@ -191,7 +208,8 @@ function shell(route, body, wide){
   return `
   <header><div class="nav">
     <div class="brand">My CD Portfolio<small>Personal CD tracker</small></div>
-    ${link("#/","Accounts","home")}
+    ${link("#/","Overview","overview")}
+    ${link("#/cds","CDs","home")}
     ${link("#/alerts",`Alerts${n?`<span class="badge">${n}</span>`:""}`,"alerts")}
     ${link("#/interest","Interest","interest")}
     ${link("#/renewals","Renewals","renewals")}
@@ -218,7 +236,7 @@ function homeView(){
   const urgent = alerts().filter(x=>x.s.level!=="info");
   return `
   <section>
-    <h1>Accounts</h1>
+    <h1>Certificates of Deposit</h1>
     ${urgent.length ? alertBox(urgent, true) : ""}
     <div class="card">
       <div class="card-head"><h2>Certificates of Deposit</h2><span class="amt">${usd(t)}</span></div>
@@ -249,13 +267,126 @@ function homeView(){
   </aside>`;
 }
 
+/* ---------- overview ---------- */
+const cdTotal = () => total();
+function groupTotal(type){
+  return data.accounts.filter(a=>a.type===type).reduce((s,a)=>s+a.balance,0) + (type==="cd" ? cdTotal() : 0);
+}
+function overviewView(){
+  const types = Object.keys(TYPES);
+  const assets = types.filter(k=>!TYPES[k].liability).reduce((s,k)=>s+groupTotal(k),0);
+  const liab = types.filter(k=>TYPES[k].liability).reduce((s,k)=>s+groupTotal(k),0);
+  const acctRow = a => `
+    <div class="row" onclick="location.hash='#/acct/${a.id}'">
+      <span><a href="#/acct/${a.id}">${esc(a.name)}</a>${a.institution?`<span class="sub">${esc(a.institution)}</span>`:""}</span>
+      <span class="bal">${usd(a.balance)}</span>
+    </div>`;
+  const cards = types.map(k=>{
+    const list = data.accounts.filter(a=>a.type===k);
+    if (k!=="cd" && !list.length) return "";
+    const head = k==="cd"
+      ? `<div class="card-head" style="cursor:pointer" onclick="location.hash='#/cds'"><h2><a href="#/cds" style="color:inherit;text-decoration:none">${TYPES[k].label} ›</a></h2><span class="amt">${usd(groupTotal(k))}</span></div>`
+      : `<div class="card-head"><h2>${TYPES[k].label}</h2><span class="amt">${usd(groupTotal(k))}</span></div>`;
+    const tracked = k==="cd" ? `
+      <div class="row" onclick="location.hash='#/cds'">
+        <span><a href="#/cds">Tracked CDs (${data.cds.length})</a><span class="sub">APY, maturity alerts, interest and renewals</span></span>
+        <span class="bal">${usd(cdTotal())}</span>
+      </div>` : "";
+    return `<div class="card">${head}<div class="group">${tracked}${list.map(acctRow).join("")}</div></div>`;
+  }).join("");
+  return `
+  <section>
+    <h1>Overview</h1>
+    ${cards}
+    <div class="card">
+      <h3>Add an account</h3>
+      <form class="f" id="addForm">
+        <label>Type<select name="type">${types.map(k=>`<option value="${k}">${TYPES[k].label}</option>`).join("")}</select></label>
+        <label>Name<input name="name" required placeholder="e.g. Savings - 1234"></label>
+        <label>Institution<input name="institution" placeholder="Optional"></label>
+        <label>Balance ($)<input type="number" name="balance" step="0.01" min="0" required></label>
+        <div class="actions"><button class="btn" type="submit">Add account</button></div>
+      </form>
+    </div>
+  </section>
+  <aside class="side">
+    <div class="card">
+      <h3>Net worth</h3>
+      <div class="kv"><span>Total assets</span><span>${usd(assets)}</span></div>
+      <div class="kv"><span>Total liabilities</span><span>${usd(liab)}</span></div>
+      <div class="kv"><span><b style="color:var(--text)">Net worth</b></span><span><b>${usd(assets-liab)}</b></span></div>
+    </div>
+    <div class="card">
+      <h3>By account type</h3>
+      ${types.map(k=>`<div class="kv"><span>${TYPES[k].label}${TYPES[k].liability?" (owed)":""}</span><span>${usd(groupTotal(k))}</span></div>`).join("")}
+      ${assets ? `<div class="note">${types.filter(k=>!TYPES[k].liability && groupTotal(k)>0).map(k=>`${TYPES[k].label}: ${(groupTotal(k)/assets*100).toFixed(1)}% of assets`).join("<br>")}</div>` : ""}
+    </div>
+  </aside>`;
+}
+
+function accountView(a){
+  const hist = (a.history||[]).slice().reverse();
+  const liability = TYPES[a.type]?.liability;
+  return `
+  <section>
+    <a class="back" href="#/">‹ Back to Overview</a>
+    <div class="card">
+      <div class="card-head"><h2>${esc(a.name)}</h2></div>
+      <div class="hero">
+        <div class="label">${liability ? "Current balance owed" : "Current balance"}</div>
+        <div class="big">${usd(a.balance)}</div>
+        <div class="meta">${TYPES[a.type]?.label || ""}${a.institution?` · ${esc(a.institution)}`:""}${a.updated?` · Updated ${fmtDate(a.updated)}`:""}</div>
+      </div>
+      <div class="tabs">
+        <button class="on" data-t="details">Details</button>
+        <button data-t="edit">Edit</button>
+        <button data-t="history">Balance history${hist.length?` (${hist.length})`:""}</button>
+      </div>
+      <div class="panel" id="p-details">
+        <div class="kv"><span>Account name</span><span>${esc(a.name)}</span></div>
+        <div class="kv"><span>Account type</span><span>${TYPES[a.type]?.label || ""}</span></div>
+        <div class="kv"><span>Institution</span><span>${esc(a.institution||"—")}</span></div>
+        <div class="kv"><span>${liability ? "Balance owed" : "Balance"}</span><span>${usd(a.balance)}</span></div>
+        <div class="kv"><span>Last updated</span><span>${a.updated ? fmtDate(a.updated) : "—"}</span></div>
+        <div class="kv"><span>Note</span><span>${esc(a.note||"—")}</span></div>
+      </div>
+      <div class="panel" id="p-edit" hidden>
+        <form class="f" id="editForm">
+          <label>Name<input name="name" value="${esc(a.name)}" required></label>
+          <label>Type<select name="type">${Object.keys(TYPES).map(k=>`<option value="${k}" ${k===a.type?"selected":""}>${TYPES[k].label}</option>`).join("")}</select></label>
+          <label>Institution<input name="institution" value="${esc(a.institution||"")}"></label>
+          <label>Balance ($)<input type="number" name="balance" step="0.01" min="0" value="${a.balance.toFixed(2)}" required></label>
+          <label style="grid-column:1/-1">Note<input name="note" value="${esc(a.note||"")}"></label>
+          <div class="actions"><button class="btn" type="submit">Save changes</button>
+            <button class="btn ghost" type="button" id="delBtn">Delete account</button></div>
+        </form>
+      </div>
+      <div class="panel" id="p-history" hidden>
+        ${hist.length ? `<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Old balance</th><th>New balance</th><th>Change</th></tr></thead>
+          <tbody>${hist.map(h=>`<tr><td>${fmtDate(h.date)}</td><td>${usd(h.from)}</td><td>${usd(h.to)}</td><td>${(h.to-h.from>=0?"+":"−")+usd(Math.abs(h.to-h.from))}</td></tr>`).join("")}</tbody></table></div>`
+          : `<div class="empty">No balance changes recorded yet. Balance edits are logged here.</div>`}
+      </div>
+    </div>
+  </section>
+  <aside class="side">
+    <div class="card">
+      <h3>Other accounts</h3>
+      ${data.accounts.filter(x=>x.id!==a.id).map(x=>`
+        <div class="kv" style="cursor:pointer" onclick="location.hash='#/acct/${x.id}'">
+          <span><a href="#/acct/${x.id}" style="color:var(--link);text-decoration:none">${esc(x.name)}</a></span><span>${usd(x.balance)}</span></div>`).join("")}
+      <div class="kv" style="cursor:pointer" onclick="location.hash='#/cds'">
+        <span><a href="#/cds" style="color:var(--link);text-decoration:none">Tracked CDs (${data.cds.length})</a></span><span>${usd(cdTotal())}</span></div>
+    </div>
+  </aside>`;
+}
+
 function detailView(c){
   const share = c.balance/total()*100;
   const hist = data.renewals.filter(r=>r.cdId===c.id).slice().reverse();
   const s = status(c);
   return `
   <section>
-    <a class="back" href="#/">‹ Back to Accounts</a>
+    <a class="back" href="#/cds">‹ Back to CDs</a>
     ${s ? alertBox([{c,s}]) : ""}
     <div class="card">
       <div class="card-head"><h2>${esc(title(c))}</h2></div>
@@ -399,7 +530,7 @@ function settingsView(){
     </div>
     <div class="card">
       <h3>Data</h3>
-      <div class="note" style="padding-top:4px">Data and renewal records are saved in this browser only. Resetting restores the original four CDs and clears renewal records.</div>
+      <div class="note" style="padding-top:4px">Data and renewal records are saved in this browser only. Resetting restores the original accounts and four CDs, and clears renewal records and balance history.</div>
       <div style="padding:0 20px 18px;display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn ghost" id="exportBtn">Export data (JSON)</button>
         <button class="btn ghost" id="resetBtn">Reset data</button>
@@ -414,13 +545,16 @@ function render(){
   if (!unlocked()){ root.innerHTML = lockView(); bindLock(); return; }
 
   const h = location.hash;
-  let m, html, route = "home", wide = false;
-  if ((m = h.match(/^#\/cd\/(\w+)/)) && data.cds.find(c=>c.id===m[1])) html = detailView(data.cds.find(c=>c.id===m[1]));
+  let m, html, route = "overview", wide = false;
+  const acct = (m = h.match(/^#\/acct\/(\w+)/)) && data.accounts.find(a=>a.id===m[1]);
+  if (acct) { html = accountView(acct); }
+  else if (h === "#/cds") { html = homeView(); route = "home"; }
+  else if ((m = h.match(/^#\/cd\/(\w+)/)) && data.cds.find(c=>c.id===m[1])) html = detailView(data.cds.find(c=>c.id===m[1]));
   else if (h === "#/alerts")   { html = alertsView();   route = "alerts"; }
   else if (h === "#/interest") { html = interestView(); route = "interest"; wide = true; }
   else if (h === "#/renewals") { html = renewalsView(); route = "renewals"; wide = true; }
   else if (h === "#/settings") { html = settingsView(); route = "settings"; wide = true; }
-  else html = homeView();
+  else html = overviewView();
   root.innerHTML = shell(route, html, wide);
 
   document.getElementById("lockBtn").onclick = () => { setUnlocked(false); render(); };
@@ -443,6 +577,29 @@ function render(){
     root.querySelector('.tabs button[data-t="history"]').click();
   };
 
+  const af = document.getElementById("addForm");
+  if (af) af.onsubmit = e => {
+    e.preventDefault();
+    const f = new FormData(af);
+    const id = "a" + Date.now().toString(36);
+    data.accounts.push({ id, type:f.get("type"), name:f.get("name").trim(), institution:f.get("institution").trim(),
+      balance:+f.get("balance"), note:"", updated:isoToday() });
+    save(); render();
+  };
+  const ef = document.getElementById("editForm");
+  if (ef) ef.onsubmit = e => {
+    e.preventDefault();
+    const f = new FormData(ef), nb = +f.get("balance");
+    if (nb !== acct.balance){ (acct.history ||= []).push({ date:isoToday(), from:acct.balance, to:nb }); acct.updated = isoToday(); }
+    Object.assign(acct, { name:f.get("name").trim(), type:f.get("type"), institution:f.get("institution").trim(), balance:nb, note:f.get("note").trim() });
+    save(); render();
+  };
+  const db = document.getElementById("delBtn");
+  if (db) db.onclick = () => {
+    if (!confirm(`Delete "${acct.name}"?`)) return;
+    data.accounts = data.accounts.filter(a=>a!==acct); save(); location.hash = "#/";
+  };
+
   const pf = document.getElementById("pwForm");
   if (pf) pf.onsubmit = async e => {
     e.preventDefault();
@@ -457,8 +614,8 @@ function render(){
 
   const rb = document.getElementById("resetBtn");
   if (rb) rb.onclick = () => {
-    if (!confirm("Reset all CD data and clear renewal records?")) return;
-    data = { cds: structuredClone(DEFAULT_CDS), renewals: [] }; save(); location.hash = "#/";  render();
+    if (!confirm("Reset all accounts and CD data?")) return;
+    data = freshData(); save(); location.hash = "#/";  render();
   };
   const eb = document.getElementById("exportBtn");
   if (eb) eb.onclick = () => {
