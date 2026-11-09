@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My CD Portfolio</title>
+<style>
+  :root{
+    --red:#e31837; --navy:#012169; --link:#0052c2; --text:#333; --muted:#666;
+    --line:#e5e5e5; --bg:#f5f5f5; --card:#fff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px}
+  header{background:#fff;border-bottom:1px solid var(--line)}
+  .nav{max-width:1100px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .brand{font-weight:700;color:var(--navy);font-size:18px}
+  .brand small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+  .nav a{color:#444;text-decoration:none;font-size:14px}
+  .nav a.active{color:var(--navy);font-weight:600}
+  main{max-width:1100px;margin:0 auto;padding:20px 16px 40px;display:grid;grid-template-columns:1fr 320px;gap:24px}
+  @media (max-width:860px){main{grid-template-columns:1fr}}
+  h1{font-size:20px;margin:6px 0 14px;font-weight:600}
+  .card{background:var(--card);border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.12);margin-bottom:20px;overflow:hidden}
+  .card::before{content:"";display:block;height:5px;background:linear-gradient(90deg,var(--red) 50%,var(--navy) 50%)}
+  .card-head{display:flex;justify-content:space-between;align-items:center;padding:18px 20px}
+  .card-head h2{margin:0;font-size:19px;font-weight:500}
+  .card-head .amt{font-size:19px;font-weight:600}
+  .group{padding:0 20px 8px}
+  .group-title{font-weight:600;font-size:14px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .row:last-child{border-bottom:none}
+  .row a{color:var(--link);font-weight:600;text-decoration:none}
+  .row:hover a{text-decoration:underline}
+  .row .sub{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:3px}
+  .row .bal{white-space:nowrap;text-align:right}
+  .side .card{padding-bottom:6px}
+  .side h3{margin:0;padding:16px 20px 6px;font-size:16px}
+  .kv{display:flex;justify-content:space-between;padding:9px 20px;border-bottom:1px solid var(--line);font-size:14px}
+  .kv:last-child{border-bottom:none}
+  .kv span:first-child{color:var(--muted)}
+  .back{display:inline-block;margin-bottom:12px;color:var(--link);text-decoration:none;font-size:14px}
+  .back:hover{text-decoration:underline}
+  .hero{padding:18px 20px 22px;border-bottom:1px solid var(--line)}
+  .hero .label{color:var(--muted);font-size:13px}
+  .hero .big{font-size:32px;font-weight:600;margin-top:4px}
+  .hero .meta{margin-top:6px;font-size:13px;color:var(--muted)}
+  .tabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--line)}
+  .tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:12px 10px;font-size:14px;cursor:pointer;color:#444}
+  .tabs button.on{border-color:var(--red);color:var(--navy);font-weight:600}
+  .panel{padding:4px 0 10px}
+  .bar{margin:10px 20px 4px;height:8px;background:#e9edf5;border-radius:4px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--navy)}
+  .note{font-size:12px;color:var(--muted);padding:8px 20px 14px;line-height:1.5}
+  footer{max-width:1100px;margin:0 auto;padding:0 16px 30px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="nav">
+    <div class="brand">My CD Portfolio<small>个人存单记录 · Personal tracker</small></div>
+    <a href="#/" class="active">Accounts</a>
+    <a href="#/">Certificates of Deposit</a>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<footer>本页面为个人存单记录工具，数据由本人手动录入，不是银行官方页面或对账单。<br>
+Personal record only — not an official bank page or statement.</footer>
+
+<script>
+const CDS = [
+  { id:"cd1", bank:"Bank of America", tag:"AD", apy:3.70, maturity:"2027-05-27", balance:137150 },
+  { id:"cd2", bank:"Bank of America", tag:"AD", apy:3.45, maturity:"2027-01-13", balance:36559 },
+  { id:"cd3", bank:"Bank of America", tag:"AD", apy:3.45, maturity:"2027-02-18", balance:55503 },
+  { id:"cd4", bank:"Bank of America", tag:"AD", apy:3.70, maturity:"2027-05-09", balance:30343 },
+];
+
+const usd = n => n.toLocaleString("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2});
+const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y,m-1,d); };
+const fmtDate = s => { const d = parse(s); return `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`; };
+const today = () => { const t = new Date(); return new Date(t.getFullYear(),t.getMonth(),t.getDate()); };
+const daysLeft = s => Math.max(0, Math.round((parse(s) - today())/86400000));
+const title = c => `${c.bank} CD (${c.tag}; ${c.apy.toFixed(2)}%; ${fmtDate(c.maturity)})`;
+const estInterest = c => c.balance * (c.apy/100) * daysLeft(c.maturity) / 365;
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+
+function listView(){
+  const total = CDS.reduce((a,c)=>a+c.balance,0);
+  const sorted = [...CDS].sort((a,b)=>parse(a.maturity)-parse(b.maturity));
+  const wApy = CDS.reduce((a,c)=>a+c.apy*c.balance,0)/total;
+  const next = sorted[0];
+  return `
+  <section>
+    <h1>Accounts</h1>
+    <div class="card">
+      <div class="card-head"><h2>Certificates of Deposit</h2><span class="amt">${usd(total)}</span></div>
+      <div class="group">
+        <div class="group-title">${esc(CDS[0].bank)}</div>
+        ${CDS.map(c=>`
+          <div class="row" onclick="location.hash='#/cd/${c.id}'">
+            <span><a href="#/cd/${c.id}">${esc(title(c))}</a>
+              <span class="sub">APY ${c.apy.toFixed(2)}% · Matures ${fmtDate(c.maturity)} · ${daysLeft(c.maturity)} days left</span></span>
+            <span class="bal">${usd(c.balance)}</span>
+          </div>`).join("")}
+      </div>
+    </div>
+  </section>
+  <aside class="side">
+    <div class="card">
+      <h3>Summary</h3>
+      <div class="kv"><span>Number of CDs</span><span>${CDS.length}</span></div>
+      <div class="kv"><span>Total balance</span><span>${usd(total)}</span></div>
+      <div class="kv"><span>Weighted avg. APY</span><span>${wApy.toFixed(2)}%</span></div>
+      <div class="kv"><span>Next maturity</span><span>${fmtDate(next.maturity)}</span></div>
+    </div>
+    <div class="card">
+      <h3>Maturity schedule</h3>
+      ${sorted.map(c=>`<div class="kv"><span>${fmtDate(c.maturity)}</span><span>${usd(c.balance)}</span></div>`).join("")}
+    </div>
+  </aside>`;
+}
+
+function detailView(c){
+  const total = CDS.reduce((a,x)=>a+x.balance,0);
+  const share = c.balance/total*100;
+  return `
+  <section>
+    <a class="back" href="#/">‹ Back to Accounts</a>
+    <div class="card">
+      <div class="card-head"><h2>${esc(title(c))}</h2></div>
+      <div class="hero">
+        <div class="label">Current balance</div>
+        <div class="big">${usd(c.balance)}</div>
+        <div class="meta">Annual Percentage Yield ${c.apy.toFixed(2)}% · Matures ${fmtDate(c.maturity)}</div>
+      </div>
+      <div class="tabs">
+        <button class="on" data-t="details">Details</button>
+        <button data-t="interest">Interest</button>
+      </div>
+      <div class="panel" id="p-details">
+        <div class="kv"><span>Account type</span><span>Certificate of Deposit</span></div>
+        <div class="kv"><span>Institution</span><span>${esc(c.bank)}</span></div>
+        <div class="kv"><span>Label</span><span>${esc(c.tag)}</span></div>
+        <div class="kv"><span>Annual Percentage Yield (APY)</span><span>${c.apy.toFixed(2)}%</span></div>
+        <div class="kv"><span>Maturity date</span><span>${fmtDate(c.maturity)}</span></div>
+        <div class="kv"><span>Days until maturity</span><span>${daysLeft(c.maturity)}</span></div>
+        <div class="kv"><span>Current balance</span><span>${usd(c.balance)}</span></div>
+        <div class="kv"><span>Share of CD portfolio</span><span>${share.toFixed(1)}%</span></div>
+        <div class="bar"><i style="width:${share.toFixed(1)}%"></i></div>
+      </div>
+      <div class="panel" id="p-interest" hidden>
+        <div class="kv"><span>Est. annual interest</span><span>${usd(c.balance*c.apy/100)}</span></div>
+        <div class="kv"><span>Est. interest from today to maturity</span><span>${usd(estInterest(c))}</span></div>
+        <div class="kv"><span>Est. value at maturity</span><span>${usd(c.balance+estInterest(c))}</span></div>
+        <div class="note">估算值：按当前余额 × APY × 剩余天数 / 365 计算，仅供参考；实际利息以银行记录为准。</div>
+      </div>
+    </div>
+  </section>
+  <aside class="side">
+    <div class="card">
+      <h3>Other CDs</h3>
+      ${CDS.filter(x=>x.id!==c.id).map(x=>`
+        <div class="kv" style="cursor:pointer" onclick="location.hash='#/cd/${x.id}'">
+          <span><a href="#/cd/${x.id}" style="color:var(--link);text-decoration:none">${x.apy.toFixed(2)}% · ${fmtDate(x.maturity)}</a></span>
+          <span>${usd(x.balance)}</span></div>`).join("")}
+    </div>
+  </aside>`;
+}
+
+function render(){
+  const app = document.getElementById("app");
+  const m = location.hash.match(/^#\/cd\/(\w+)/);
+  const cd = m && CDS.find(c=>c.id===m[1]);
+  app.innerHTML = cd ? detailView(cd) : listView();
+  app.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+    app.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));
+    app.querySelectorAll(".panel").forEach(p=>p.hidden = p.id!=="p-"+b.dataset.t);
+  });
+  window.scrollTo(0,0);
+}
+window.addEventListener("hashchange", render);
+render();
+</script>
+</body>
+</html>
