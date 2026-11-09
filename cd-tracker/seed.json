@@ -1,0 +1,17 @@
+{
+  "cds": [
+    { "id": "cd1", "bank": "Bank of America", "tag": "AD", "apy": 3.70, "maturity": "2027-05-27", "balance": 137150 },
+    { "id": "cd2", "bank": "Bank of America", "tag": "AD", "apy": 3.45, "maturity": "2027-01-13", "balance": 36559 },
+    { "id": "cd3", "bank": "Bank of America", "tag": "AD", "apy": 3.45, "maturity": "2027-02-18", "balance": 55503 },
+    { "id": "cd4", "bank": "Bank of America", "tag": "AD", "apy": 3.70, "maturity": "2027-05-09", "balance": 30343 }
+  ],
+  "accounts": [
+    { "id": "a1", "type": "checking",   "name": "Checking",                   "institution": "", "balance": 3621.59,  "note": "" },
+    { "id": "a2", "type": "savings",    "name": "Regular Savings - 9459",     "institution": "", "balance": 1374.41,  "note": "" },
+    { "id": "a3", "type": "cd",         "name": "7 Month CD - 8261",          "institution": "", "balance": 23669.50, "note": "" },
+    { "id": "a4", "type": "credit",     "name": "Credit card",                "institution": "", "balance": 851.36,   "note": "" },
+    { "id": "a5", "type": "credit",     "name": "Travel rewards card - 6678", "institution": "", "balance": 1848.69,  "note": "" },
+    { "id": "a6", "type": "investment", "name": "Brokerage account",          "institution": "", "balance": 142.96,   "note": "" }
+  ],
+  "renewals": []
+}
