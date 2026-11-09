@@ -6,7 +6,7 @@
 <title>My CD Portfolio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-  /* Layout: top nav, main column of account cards + a summary sidebar; stacks to one column on phones. */
+  /* Layout: top nav, main column of CD cards + a summary sidebar; stacks to one column on phones. */
   :root{
     --red:#e31837; --stripe2:#012169; --brand:#012169; --link:#0052c2;
     --text:#2b2f36; --muted:#5f6672; --line:#e3e6eb; --bg:#f3f4f7; --card:#ffffff; --field:#ffffff; --field-line:#b8bec8;
@@ -68,6 +68,7 @@
   .kv span:first-child{color:var(--muted)}
   .kv span:last-child{text-align:right;overflow-wrap:anywhere}
   .kv a{color:var(--link);text-decoration:none}
+  .kv .num{white-space:nowrap;flex:none;overflow-wrap:normal}
   .kv.strong span{color:var(--text);font-weight:700}
   .back{display:inline-block;margin-bottom:12px;color:var(--link);text-decoration:none;font-size:14px}
   .back:hover{text-decoration:underline}
@@ -89,6 +90,9 @@
   .alert.warn{background:var(--warn-bg);color:var(--warn)}
   .alert.info{background:var(--info-bg);color:var(--info)}
   .alert .dot{width:10px;height:10px;border-radius:50%;background:currentColor;margin-top:5px;flex:none}
+  .linkbtn{background:none;border:0;padding:0 0 0 8px;font:inherit;font-size:13px;color:var(--link);cursor:pointer}
+  .linkbtn:hover{text-decoration:underline}
+  .panel h3{padding:18px 20px 6px;font-size:14px;color:var(--brand);border-bottom:1px solid var(--line)}
   .pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:9px;margin-left:6px;vertical-align:1px;white-space:nowrap}
   .pill.due{background:var(--due-bg);color:var(--due)}
   .pill.warn{background:var(--warn-bg);color:var(--warn)}
@@ -128,27 +132,18 @@
 
 <script>
 /* ================= constants ================= */
-const TYPES = {
-  checking:  { label:"Checking",                liability:false },
-  savings:   { label:"Savings",                 liability:false },
-  cd:        { label:"Certificates of Deposit", liability:false },
-  investment:{ label:"Investments",             liability:false },
-  credit:    { label:"Credit cards",            liability:true  },
-};
-const ALERT_WARN_DAYS = 30, ALERT_INFO_DAYS = 60;
 const DOC_PATH = "portfolio/main";
 const LOCAL_KEY = "cdp.data";
 
 /* ================= state + storage ================= */
 // mode: "db" (claude.ai artifact database), "local" (this browser only)
 let mode = null, docRef = null, data = null, lastSaved = "", loadTimer = null, loadNote = "";
-const tabState = {};
+const tabState = {}, revealed = {};
 
-const emptyData = () => ({ cds: [], accounts: [], renewals: [], pwHash: null });
+const emptyData = () => ({ cds: [], renewals: [], pwHash: null });
 function normalize(o){
   o = (o && typeof o === "object") ? JSON.parse(JSON.stringify(o)) : {};
-  return { cds: Array.isArray(o.cds) ? o.cds : [], accounts: Array.isArray(o.accounts) ? o.accounts : [],
-           renewals: Array.isArray(o.renewals) ? o.renewals : [], pwHash: o.pwHash || null };
+  return { cds: Array.isArray(o.cds) ? o.cds : [], renewals: Array.isArray(o.renewals) ? o.renewals : [], pwHash: o.pwHash || null };
 }
 const lsGet = (k, s) => { try{ return JSON.parse((s||localStorage).getItem(k)); }catch(e){ return null; } };
 const lsSet = (k, v, s) => { try{ (s||localStorage).setItem(k, JSON.stringify(v)); }catch(e){} };
@@ -202,7 +197,7 @@ async function boot(){
       const ae = document.activeElement;
       if (ae && ae.closest && ae.closest("form") && unlocked()) { render.pending = true; return; }
       render();
-    }, err => {
+    }, () => {
       clearTimeout(loadTimer);
       loadNote = "Your saved data is not available in this view.";
       if (!data) data = emptyData();
@@ -213,7 +208,6 @@ async function boot(){
     data = normalize(lsGet(LOCAL_KEY));
     const oldPw = lsGet("cdp.pw");
     if (!data.pwHash && oldPw){ data.pwHash = oldPw; lsSet(LOCAL_KEY, data); }
-    if (!Array.isArray((lsGet(LOCAL_KEY)||{}).accounts) && lsGet(LOCAL_KEY)) lsSet(LOCAL_KEY, data);
     render();
   }
 }
@@ -224,27 +218,17 @@ const parse = s => { const [y,m,d] = String(s).split("-").map(Number); return ne
 const fmtDate = s => { if(!s) return "—"; const d = parse(s); return `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`; };
 const isoToday = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; };
 const today = () => parse(isoToday());
-const daysLeft = s => Math.round((parse(s) - today())/86400000);
-const title = c => `${c.bank || "CD"} CD (${c.tag ? c.tag + "; " : ""}${(+c.apy).toFixed(2)}%; ${fmtDate(c.maturity)})`;
+const remainingDays = s => Math.max(0, Math.round((parse(s) - today())/86400000));
+const rate = c => `${(+c.apy).toFixed(2)}%`;
+const title = c => c.nickname || `${c.bank || "CD"} CD (${c.tag ? c.tag + "; " : ""}${rate(c)}; ${fmtDate(c.maturity)})`;
+const mask = n => n ? "••••" + String(n).replace(/\s/g,"").slice(-4) : "";
 const annualInt = c => c.balance * c.apy / 100;
-const intToMaturity = c => c.balance * (c.apy/100) * Math.max(0,daysLeft(c.maturity)) / 365;
+const intToMaturity = c => c.balance * (c.apy/100) * remainingDays(c.maturity) / 365;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 const cdTotal = () => data.cds.reduce((a,c)=>a+c.balance,0);
 const byMaturity = () => [...data.cds].sort((a,b)=>parse(a.maturity)-parse(b.maturity));
-const wApy = list => { const t = list.reduce((a,c)=>a+c.balance,0); return t ? list.reduce((a,c)=>a+c.apy*c.balance,0)/t : 0; };
-
-function status(c){
-  const d = daysLeft(c.maturity);
-  if (d <= 0)               return { level:"due",  text: d===0 ? "Matures today" : `Matured ${-d} day${-d===1?"":"s"} ago` };
-  if (d <= ALERT_WARN_DAYS) return { level:"warn", text:`Matures in ${d} day${d===1?"":"s"}` };
-  if (d <= ALERT_INFO_DAYS) return { level:"info", text:`Matures in ${d} days` };
-  return null;
-}
-const alerts = () => byMaturity().map(c=>({c, s:status(c)})).filter(x=>x.s);
-function groupTotal(type){
-  return data.accounts.filter(a=>a.type===type).reduce((s,a)=>s+a.balance,0) + (type==="cd" ? cdTotal() : 0);
-}
+const wRate = list => { const t = list.reduce((a,c)=>a+c.balance,0); return t ? list.reduce((a,c)=>a+c.apy*c.balance,0)/t : 0; };
 
 /* ================= password lock ================= */
 async function hash(pw){
@@ -303,14 +287,11 @@ function confirmInline(btn, text, yesLabel, onYes){
 
 /* ================= layout ================= */
 function shell(route, body, wide){
-  const n = alerts().length;
   const link = (h, label, key) => `<a href="#${h}" class="${route===key?"active":""}">${label}</a>`;
   return `
   <header class="gutter"><div class="nav">
     <div class="brand">My CD Portfolio<small>Personal CD tracker</small></div>
-    ${link("overview","Overview","overview")}
     ${link("cds","CDs","cds")}
-    ${link("alerts",`Alerts${n?`<span class="badge">${n}</span>`:""}`,"alerts")}
     ${link("interest","Interest","interest")}
     ${link("renewals","Renewals","renewals")}
     ${link("preferences","Preferences","preferences")}
@@ -320,77 +301,22 @@ function shell(route, body, wide){
   <main class="gutter ${wide?"wide":""}">${loadNote?`<div class="alert warn" style="grid-column:1/-1;margin:0"><span class="dot"></span><span>${esc(loadNote)}</span></div>`:""}${body}</main>`;
 }
 
-function alertBox(list, compact){
-  return list.map(({c,s})=>`
-    <div class="alert ${s.level}"><span class="dot"></span><span>
-      <b>${s.text}</b>
-      <a href="#cd-${c.id}">${esc(title(c))}</a> · ${usd(c.balance)}
-      ${compact ? "" : `<br>${s.level==="due" ? "Record the renewal or withdrawal for this CD." : "Decide whether to renew or withdraw before the maturity date."}`}
-    </span></div>`).join("");
-}
-const typeOptions = sel => Object.keys(TYPES).map(k=>`<option value="${k}" ${k===sel?"selected":""}>${TYPES[k].label}</option>`).join("");
-
 /* ================= views ================= */
-function overviewView(){
-  const types = Object.keys(TYPES);
-  const assets = types.filter(k=>!TYPES[k].liability).reduce((s,k)=>s+groupTotal(k),0);
-  const liab = types.filter(k=>TYPES[k].liability).reduce((s,k)=>s+groupTotal(k),0);
-  const acctRow = a => `
-    <div class="row" tabindex="0" data-go="acct-${a.id}">
-      <span><a href="#acct-${a.id}">${esc(a.name)}</a>${a.institution?`<span class="sub">${esc(a.institution)}</span>`:""}</span>
-      <span class="bal">${usd(a.balance)}</span>
-    </div>`;
-  const cards = types.map(k=>{
-    const list = data.accounts.filter(a=>a.type===k);
-    if (k==="cd" ? (!list.length && !data.cds.length) : !list.length) return "";
-    const head = k==="cd"
-      ? `<div class="card-head"><h2><a href="#cds">${TYPES[k].label} ›</a></h2><span class="amt">${usd(groupTotal(k))}</span></div>`
-      : `<div class="card-head"><h2>${TYPES[k].label}</h2><span class="amt">${usd(groupTotal(k))}</span></div>`;
-    const tracked = (k==="cd" && data.cds.length) ? `
-      <div class="row" tabindex="0" data-go="cds">
-        <span><a href="#cds">Tracked CDs (${data.cds.length})</a><span class="sub">APY, maturity alerts, interest and renewals</span></span>
-        <span class="bal">${usd(cdTotal())}</span>
-      </div>` : "";
-    return `<div class="card">${head}<div class="group">${tracked}${list.map(acctRow).join("")}</div></div>`;
-  }).join("");
-  return `
-  <section>
-    <h1>Overview</h1>
-    ${cards || `<div class="card"><div class="empty">No accounts yet. Add your checking, savings, credit card and investment accounts below, and add CDs on the CDs page.</div></div>`}
-    <div class="card">
-      <h3>Add an account</h3>
-      <form class="f" id="addAcctForm">
-        <label>Type<select id="aa-type" name="type">${typeOptions("checking")}</select></label>
-        <label>Name<input id="aa-name" name="name" required placeholder="e.g. Savings - 1234"></label>
-        <label>Institution<input id="aa-inst" name="institution" placeholder="Optional"></label>
-        <label>Balance ($)<input id="aa-bal" type="number" name="balance" step="0.01" min="0" required></label>
-        <div class="actions"><button class="btn" type="submit">Add account</button></div>
-      </form>
-    </div>
-  </section>
-  <aside>
-    <div class="card">
-      <h3>Net worth</h3>
-      <div class="kv"><span>Total assets</span><span>${usd(assets)}</span></div>
-      <div class="kv"><span>Total liabilities</span><span>${usd(liab)}</span></div>
-      <div class="kv strong"><span>Net worth</span><span>${usd(assets-liab)}</span></div>
-    </div>
-    <div class="card">
-      <h3>By account type</h3>
-      ${types.map(k=>`<div class="kv"><span>${TYPES[k].label}${TYPES[k].liability?" (owed)":""}</span><span>${usd(groupTotal(k))}</span></div>`).join("")}
-      ${assets ? `<div class="note">${types.filter(k=>!TYPES[k].liability && groupTotal(k)>0).map(k=>`${TYPES[k].label}: ${(groupTotal(k)/assets*100).toFixed(1)}% of assets`).join("<br>")}</div>` : ""}
-    </div>
-  </aside>`;
-}
-
 function cdForm(c, id){
+  const v = k => esc(c?.[k] ?? "");
   return `
   <form class="f" id="${id}">
-    <label>Institution<input id="${id}-bank" name="bank" value="${esc(c?.bank||"")}" required></label>
-    <label>Label<input id="${id}-tag" name="tag" value="${esc(c?.tag||"")}" placeholder="Optional"></label>
-    <label>APY (%)<input id="${id}-apy" type="number" name="apy" step="0.01" min="0" value="${c?(+c.apy).toFixed(2):""}" required></label>
-    <label>Maturity date<input id="${id}-mat" type="date" name="maturity" value="${esc(c?.maturity||"")}" required></label>
-    <label>Balance ($)<input id="${id}-bal" type="number" name="balance" step="0.01" min="0" value="${c?(+c.balance).toFixed(2):""}" required></label>
+    <label>Nickname<input id="${id}-nick" name="nickname" value="${v("nickname")}" placeholder="e.g. 7 Month CD"></label>
+    <label>Institution<input id="${id}-bank" name="bank" value="${v("bank")}" required></label>
+    <label>Label<input id="${id}-tag" name="tag" value="${v("tag")}" placeholder="Optional"></label>
+    <label>Account number<input id="${id}-acct" name="account" value="${v("account")}" placeholder="From your statement" inputmode="numeric" autocomplete="off"></label>
+    <label>Interest rate (%)<input id="${id}-apy" type="number" name="apy" step="0.01" min="0" value="${c?(+c.apy).toFixed(2):""}" required></label>
+    <label>Term<input id="${id}-term" name="term" value="${v("term")}" placeholder="e.g. 7 months"></label>
+    <label>Date opened<input id="${id}-open" type="date" name="opened" value="${v("opened")}"></label>
+    <label>Maturity date<input id="${id}-mat" type="date" name="maturity" value="${v("maturity")}" required></label>
+    <label>Current balance ($)<input id="${id}-bal" type="number" name="balance" step="0.01" min="0" value="${c?(+c.balance).toFixed(2):""}" required></label>
+    <label>Beginning balance this term ($)<input id="${id}-beg" type="number" name="beginBalance" step="0.01" min="0" value="${c&&c.beginBalance!=null&&c.beginBalance!==""?(+c.beginBalance).toFixed(2):""}"></label>
+    <label>Last renewal date<input id="${id}-ren" type="date" name="lastRenewal" value="${v("lastRenewal")}"></label>
     <div class="actions"><button class="btn" type="submit">${c ? "Save changes" : "Add CD"}</button>
       ${c ? `<button class="btn ghost" type="button" id="delCdBtn">Delete CD</button>` : ""}</div>
   </form>`;
@@ -398,23 +324,21 @@ function cdForm(c, id){
 
 function cdsView(){
   const t = cdTotal(), sorted = byMaturity();
-  const urgent = alerts().filter(x=>x.s.level!=="info");
   const banks = [...new Set(data.cds.map(c=>c.bank || "Other"))];
   return `
   <section>
     <h1>Certificates of Deposit</h1>
-    ${urgent.length ? alertBox(urgent, true) : ""}
     <div class="card">
       <div class="card-head"><h2>Tracked CDs</h2><span class="amt">${usd(t)}</span></div>
       ${data.cds.length ? banks.map(b=>`
       <div class="group">
         <div class="kv" style="padding:10px 0;font-weight:600"><span style="color:var(--text)">${esc(b)}</span><span></span></div>
-        ${data.cds.filter(c=>(c.bank||"Other")===b).map(c=>{ const s = status(c); return `
+        ${data.cds.filter(c=>(c.bank||"Other")===b).map(c=>`
           <div class="row" tabindex="0" data-go="cd-${c.id}">
-            <span><a href="#cd-${c.id}">${esc(title(c))}</a>${s?`<span class="pill ${s.level}">${s.text}</span>`:""}
-              <span class="sub">APY ${(+c.apy).toFixed(2)}% · Matures ${fmtDate(c.maturity)} · ${Math.max(0,daysLeft(c.maturity))} days left</span></span>
+            <span><a href="#cd-${c.id}">${esc(title(c))}</a>
+              <span class="sub">${c.account?`Account ${esc(mask(c.account))} · `:""}Interest rate ${rate(c)} · Matures ${fmtDate(c.maturity)}</span></span>
             <span class="bal">${usd(c.balance)}</span>
-          </div>`;}).join("")}
+          </div>`).join("")}
       </div>`).join("") : `<div class="empty">No CDs yet. Add your first CD with the form below.</div>`}
     </div>
     <div class="card"><h3>Add a CD</h3>${cdForm(null, "addCdForm")}</div>
@@ -424,21 +348,20 @@ function cdsView(){
       <h3>Summary</h3>
       <div class="kv"><span>Number of CDs</span><span>${data.cds.length}</span></div>
       <div class="kv"><span>Total balance</span><span>${usd(t)}</span></div>
-      <div class="kv"><span>Weighted avg. APY</span><span>${wApy(data.cds).toFixed(2)}%</span></div>
+      <div class="kv"><span>Weighted avg. rate</span><span>${wRate(data.cds).toFixed(2)}%</span></div>
       <div class="kv"><span>Est. annual interest</span><span>${usd(data.cds.reduce((a,c)=>a+annualInt(c),0))}</span></div>
-      <div class="kv"><span>Next maturity</span><span>${sorted[0] ? fmtDate(sorted[0].maturity) : "—"}</span></div>
     </div>
     ${sorted.length ? `<div class="card">
-      <h3>Maturity schedule</h3>
-      ${sorted.map(c=>`<div class="kv"><span><a href="#cd-${c.id}">${fmtDate(c.maturity)}</a></span><span>${usd(c.balance)}</span></div>`).join("")}
+      <h3>Maturity dates</h3>
+      ${sorted.map(c=>`<div class="kv"><span><a href="#cd-${c.id}">${fmtDate(c.maturity)}</a></span><span class="num">${usd(c.balance)}</span></div>`).join("")}
     </div>` : ""}
   </aside>`;
 }
 
 function historyTable(rows, withCd){
-  const cdName = id => { const c = data.cds.find(x=>x.id===id); return c ? `${(+c.apy).toFixed(2)}% · ${fmtDate(c.maturity)}` : "Removed CD"; };
+  const cdName = id => { const c = data.cds.find(x=>x.id===id); return c ? title(c) : "Removed CD"; };
   return `<div class="tbl-wrap"><table>
-    <thead><tr>${withCd?"<th>CD</th>":""}<th${withCd?"":' style="text-align:left"'}>Renewed</th><th>Old APY</th><th>New APY</th><th>Old maturity</th><th>New maturity</th><th>Old balance</th><th>New balance</th><th style="text-align:left">Note</th></tr></thead>
+    <thead><tr>${withCd?"<th>CD</th>":""}<th${withCd?"":' style="text-align:left"'}>Renewed</th><th>Old rate</th><th>New rate</th><th>Old maturity</th><th>New maturity</th><th>Old balance</th><th>New balance</th><th style="text-align:left">Note</th></tr></thead>
     <tbody>${rows.map(r=>`<tr>
       ${withCd?`<td><a href="#cd-${esc(r.cdId)}">${esc(cdName(r.cdId))}</a></td>`:""}
       <td${withCd?"":' style="text-align:left"'}>${fmtDate(r.date)}</td><td>${(+r.oldApy).toFixed(2)}%</td><td>${(+r.newApy).toFixed(2)}%</td>
@@ -450,17 +373,17 @@ function historyTable(rows, withCd){
 function cdDetailView(c){
   const t = cdTotal(), share = t ? c.balance/t*100 : 0;
   const hist = data.renewals.filter(r=>r.cdId===c.id).slice().reverse();
-  const s = status(c);
+  const show = !!revealed[c.id];
+  const dash = v => (v===undefined || v===null || v==="") ? "—" : v;
   return `
   <section>
     <a class="back" href="#cds">‹ Back to CDs</a>
-    ${s ? alertBox([{c,s}]) : ""}
     <div class="card">
       <div class="card-head"><h2>${esc(title(c))}</h2></div>
       <div class="hero">
         <div class="label">Current balance</div>
         <div class="big">${usd(c.balance)}</div>
-        <div class="meta">Annual Percentage Yield ${(+c.apy).toFixed(2)}% · Matures ${fmtDate(c.maturity)}</div>
+        <div class="meta">Interest rate ${rate(c)} · Matures ${fmtDate(c.maturity)}</div>
       </div>
       <div class="tabs" role="tablist">
         <button type="button" data-t="details">Details</button>
@@ -470,27 +393,36 @@ function cdDetailView(c){
         <button type="button" data-t="edit">Edit</button>
       </div>
       <div class="panel" id="p-details">
-        <div class="kv"><span>Account type</span><span>Certificate of Deposit</span></div>
-        <div class="kv"><span>Institution</span><span>${esc(c.bank||"—")}</span></div>
-        <div class="kv"><span>Label</span><span>${esc(c.tag||"—")}</span></div>
-        <div class="kv"><span>Annual Percentage Yield (APY)</span><span>${(+c.apy).toFixed(2)}%</span></div>
-        <div class="kv"><span>Maturity date</span><span>${fmtDate(c.maturity)}</span></div>
-        <div class="kv"><span>Days until maturity</span><span>${Math.max(0,daysLeft(c.maturity))}</span></div>
+        <h3>Account details</h3>
+        <div class="kv"><span>Nickname</span><span>${esc(title(c))}</span></div>
+        <div class="kv"><span>Account number</span><span>${c.account
+          ? `${esc(show ? c.account : mask(c.account))} <button type="button" class="linkbtn" id="toggleAcct">${show?"Hide":"Show"}</button>`
+          : `— <button type="button" class="linkbtn" data-tab-jump="edit">Add</button>`}</span></div>
+        <div class="kv"><span>Institution</span><span>${esc(dash(c.bank))}</span></div>
         <div class="kv"><span>Current balance</span><span>${usd(c.balance)}</span></div>
+        <div class="kv"><span>Date opened</span><span>${fmtDate(c.opened)}</span></div>
+        <div class="kv"><span>Term</span><span>${esc(dash(c.term))}</span></div>
+        <div class="kv"><span>Maturity date</span><span>${fmtDate(c.maturity)}</span></div>
+        <h3>Deposit</h3>
+        <div class="kv"><span>Beginning balance this term</span><span>${c.beginBalance!=null && c.beginBalance!=="" ? usd(c.beginBalance) : "—"}</span></div>
+        <div class="kv"><span>Last renewal date</span><span>${fmtDate(c.lastRenewal)}</span></div>
+        <h3>Interest</h3>
+        <div class="kv"><span>Interest rate</span><span>${rate(c)}</span></div>
+        <div class="kv"><span>Est. annual interest</span><span>${usd(annualInt(c))}</span></div>
         <div class="kv"><span>Share of CD portfolio</span><span>${share.toFixed(1)}%</span></div>
         <div class="bar"><i style="width:${share.toFixed(1)}%"></i></div>
       </div>
       <div class="panel" id="p-interest" hidden>
         <div class="kv"><span>Est. annual interest</span><span>${usd(annualInt(c))}</span></div>
         <div class="kv"><span>Est. monthly interest</span><span>${usd(annualInt(c)/12)}</span></div>
-        <div class="kv"><span>Est. interest from today to maturity</span><span>${usd(intToMaturity(c))}</span></div>
+        <div class="kv"><span>Est. interest through maturity</span><span>${usd(intToMaturity(c))}</span></div>
         <div class="kv"><span>Est. value at maturity</span><span>${usd(c.balance+intToMaturity(c))}</span></div>
-        <div class="note">Estimates use current balance × APY × days remaining / 365. Actual interest depends on the bank's compounding and crediting schedule.</div>
+        <div class="note">Estimates use current balance × interest rate × time remaining. Actual interest depends on the bank's compounding and crediting schedule.</div>
       </div>
       <div class="panel" id="p-renew" hidden>
         <form class="f" id="renewForm">
           <label>Renewal date<input id="rn-date" type="date" name="date" value="${esc(c.maturity)}" required></label>
-          <label>New APY (%)<input id="rn-apy" type="number" name="apy" step="0.01" min="0" value="${(+c.apy).toFixed(2)}" required></label>
+          <label>New interest rate (%)<input id="rn-apy" type="number" name="apy" step="0.01" min="0" value="${(+c.apy).toFixed(2)}" required></label>
           <label>New maturity date<input id="rn-mat" type="date" name="maturity" required></label>
           <label>New balance ($)<input id="rn-bal" type="number" name="balance" step="0.01" min="0" value="${(c.balance+intToMaturity(c)).toFixed(2)}" required></label>
           <label class="full">Note<input id="rn-note" type="text" name="note" placeholder="Optional, e.g. renewed for 7 months"></label>
@@ -507,84 +439,7 @@ function cdDetailView(c){
     <div class="card">
       <h3>Other CDs</h3>
       ${data.cds.filter(x=>x.id!==c.id).map(x=>`
-        <div class="kv"><span><a href="#cd-${x.id}">${(+x.apy).toFixed(2)}% · ${fmtDate(x.maturity)}</a></span><span>${usd(x.balance)}</span></div>`).join("") || `<div class="empty">No other CDs.</div>`}
-    </div>
-  </aside>`;
-}
-
-function accountView(a){
-  const hist = (a.history||[]).slice().reverse();
-  const liability = TYPES[a.type]?.liability;
-  return `
-  <section>
-    <a class="back" href="#overview">‹ Back to Overview</a>
-    <div class="card">
-      <div class="card-head"><h2>${esc(a.name)}</h2></div>
-      <div class="hero">
-        <div class="label">${liability ? "Current balance owed" : "Current balance"}</div>
-        <div class="big">${usd(a.balance)}</div>
-        <div class="meta">${TYPES[a.type]?.label || ""}${a.institution?` · ${esc(a.institution)}`:""}${a.updated?` · Updated ${fmtDate(a.updated)}`:""}</div>
-      </div>
-      <div class="tabs" role="tablist">
-        <button type="button" data-t="details">Details</button>
-        <button type="button" data-t="edit">Edit</button>
-        <button type="button" data-t="history">Balance history${hist.length?` (${hist.length})`:""}</button>
-      </div>
-      <div class="panel" id="p-details">
-        <div class="kv"><span>Account name</span><span>${esc(a.name)}</span></div>
-        <div class="kv"><span>Account type</span><span>${TYPES[a.type]?.label || ""}</span></div>
-        <div class="kv"><span>Institution</span><span>${esc(a.institution||"—")}</span></div>
-        <div class="kv"><span>${liability ? "Balance owed" : "Balance"}</span><span>${usd(a.balance)}</span></div>
-        <div class="kv"><span>Last updated</span><span>${a.updated ? fmtDate(a.updated) : "—"}</span></div>
-        <div class="kv"><span>Note</span><span>${esc(a.note||"—")}</span></div>
-      </div>
-      <div class="panel" id="p-edit" hidden>
-        <form class="f" id="editAcctForm">
-          <label>Name<input id="ea-name" name="name" value="${esc(a.name)}" required></label>
-          <label>Type<select id="ea-type" name="type">${typeOptions(a.type)}</select></label>
-          <label>Institution<input id="ea-inst" name="institution" value="${esc(a.institution||"")}"></label>
-          <label>Balance ($)<input id="ea-bal" type="number" name="balance" step="0.01" min="0" value="${(+a.balance).toFixed(2)}" required></label>
-          <label class="full">Note<input id="ea-note" name="note" value="${esc(a.note||"")}"></label>
-          <div class="actions"><button class="btn" type="submit">Save changes</button>
-            <button class="btn ghost" type="button" id="delAcctBtn">Delete account</button></div>
-        </form>
-      </div>
-      <div class="panel" id="p-history" hidden>
-        ${hist.length ? `<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Old balance</th><th>New balance</th><th>Change</th></tr></thead>
-          <tbody>${hist.map(h=>`<tr><td>${fmtDate(h.date)}</td><td>${usd(h.from)}</td><td>${usd(h.to)}</td><td>${(h.to-h.from>=0?"+":"−")+usd(Math.abs(h.to-h.from))}</td></tr>`).join("")}</tbody></table></div>`
-          : `<div class="empty">No balance changes recorded yet. Balance edits are logged here.</div>`}
-      </div>
-    </div>
-  </section>
-  <aside>
-    <div class="card">
-      <h3>Other accounts</h3>
-      ${data.accounts.filter(x=>x.id!==a.id).map(x=>`
-        <div class="kv"><span><a href="#acct-${x.id}">${esc(x.name)}</a></span><span>${usd(x.balance)}</span></div>`).join("")}
-      ${data.cds.length ? `<div class="kv"><span><a href="#cds">Tracked CDs (${data.cds.length})</a></span><span>${usd(cdTotal())}</span></div>` : ""}
-    </div>
-  </aside>`;
-}
-
-function alertsView(){
-  const list = alerts();
-  const upcoming = byMaturity().filter(c=>!status(c));
-  return `
-  <section>
-    <h1>Maturity alerts</h1>
-    ${list.length ? alertBox(list) : `<div class="card"><div class="empty">No CDs are maturing in the next ${ALERT_INFO_DAYS} days.</div></div>`}
-    <div class="card">
-      <h3>Later maturities</h3>
-      ${upcoming.length ? upcoming.map(c=>`<div class="kv"><span><a href="#cd-${c.id}">${esc(title(c))}</a></span><span>${daysLeft(c.maturity)} days</span></div>`).join("")
-        : `<div class="empty">None.</div>`}
-    </div>
-  </section>
-  <aside>
-    <div class="card">
-      <h3>Alert rules</h3>
-      <div class="kv"><span><span class="pill due">Due</span></span><span>Matured or matures today</span></div>
-      <div class="kv"><span><span class="pill warn">Soon</span></span><span>Within ${ALERT_WARN_DAYS} days</span></div>
-      <div class="kv"><span><span class="pill info">Upcoming</span></span><span>Within ${ALERT_INFO_DAYS} days</span></div>
+        <div class="kv"><span><a href="#cd-${x.id}">${esc(title(x))}</a></span><span class="num">${usd(x.balance)}</span></div>`).join("") || `<div class="empty">No other CDs.</div>`}
     </div>
   </aside>`;
 }
@@ -600,16 +455,16 @@ function interestView(){
     <div class="card">
       <div class="card-head"><h2>Estimated interest by CD</h2><span class="amt">${usd(sum(intToMaturity))}</span></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>CD</th><th>Balance</th><th>APY</th><th>Annual</th><th>Monthly</th><th>To maturity</th><th>Value at maturity</th></tr></thead>
+        <thead><tr><th>CD</th><th>Balance</th><th>Rate</th><th>Annual</th><th>Monthly</th><th>Through maturity</th><th>Value at maturity</th></tr></thead>
         <tbody>${cds.map(c=>`<tr>
-          <td><a href="#cd-${c.id}">${(+c.apy).toFixed(2)}% · ${fmtDate(c.maturity)}</a></td>
-          <td>${usd(c.balance)}</td><td>${(+c.apy).toFixed(2)}%</td><td>${usd(annualInt(c))}</td>
+          <td><a href="#cd-${c.id}">${esc(title(c))}</a></td>
+          <td>${usd(c.balance)}</td><td>${rate(c)}</td><td>${usd(annualInt(c))}</td>
           <td>${usd(annualInt(c)/12)}</td><td>${usd(intToMaturity(c))}</td><td>${usd(c.balance+intToMaturity(c))}</td></tr>`).join("")}
         </tbody>
-        <tfoot><tr><td>Total</td><td>${usd(t)}</td><td>${wApy(cds).toFixed(2)}%</td>
+        <tfoot><tr><td>Total</td><td>${usd(t)}</td><td>${wRate(cds).toFixed(2)}%</td>
           <td>${usd(sum(annualInt))}</td><td>${usd(sum(annualInt)/12)}</td><td>${usd(sum(intToMaturity))}</td><td>${usd(t+sum(intToMaturity))}</td></tr></tfoot>
       </table></div>
-      <div class="note">Estimates use current balance × APY × days remaining / 365. The total APY is weighted by balance.</div>
+      <div class="note">Estimates use current balance × interest rate × time remaining. The total rate is weighted by balance.</div>
     </div>
   </section>`;
 }
@@ -621,7 +476,7 @@ function renewalsView(){
     <h1>Renewal records</h1>
     <div class="card">
       <div class="card-head"><h2>All renewals</h2><span class="amt">${rows.length}</span></div>
-      ${rows.length ? historyTable(rows, true) : `<div class="empty">No renewals recorded yet. Open a CD and use the “Record renewal” tab when it matures.</div>`}
+      ${rows.length ? historyTable(rows, true) : `<div class="empty">No renewals recorded yet. Open a CD and use the “Record renewal” tab when it renews.</div>`}
     </div>
   </section>`;
 }
@@ -641,7 +496,7 @@ function preferencesView(){
     </div>
     <div class="card">
       <h3>Backup</h3>
-      <div class="note" style="padding-top:4px">${mode==="db" ? "Your accounts, CDs and history are saved with this page, so they appear on any device where you open it." : "Your data is saved in this browser only. Export a backup before clearing browser data or switching devices."}</div>
+      <div class="note" style="padding-top:4px">${mode==="db" ? "Your CDs and history are saved with this page, so they appear on any device where you open it." : "Your data is saved in this browser only. Export a backup before clearing browser data or switching devices."}</div>
       <div class="pad">
         <button class="btn ghost" type="button" id="exportBtn">Download backup (JSON)</button>
         <button class="btn ghost" type="button" id="copyBtn">Copy backup</button>
@@ -651,13 +506,13 @@ function preferencesView(){
     <div class="card">
       <h3>Restore from backup</h3>
       <form class="f" id="importForm">
-        <label class="full">Paste backup JSON<textarea id="imp-json" name="json" required placeholder='{"cds":[...],"accounts":[...],"renewals":[...]}'></textarea></label>
+        <label class="full">Paste backup JSON<textarea id="imp-json" name="json" required placeholder='{"cds":[...],"renewals":[...]}'></textarea></label>
         <div class="actions"><button class="btn" type="submit" id="importBtn">Restore</button><span id="impMsg"></span></div>
       </form>
     </div>
     <div class="card">
       <h3>Clear data</h3>
-      <div class="note" style="padding-top:4px">Removes all accounts, CDs, renewal records and balance history. Your password stays the same.</div>
+      <div class="note" style="padding-top:4px">Removes all CDs and renewal records. Your password stays the same.</div>
       <div class="pad"><button class="btn ghost" type="button" id="clearBtn">Clear all data</button></div>
     </div>
   </section>`;
@@ -668,10 +523,9 @@ function currentRoute(){
   const h = location.hash.replace(/^#\/?/, "");
   let m;
   if ((m = h.match(/^cd-([\w-]+)$/))){ const c = data.cds.find(x=>x.id===m[1]); if (c) return { key:"cds", view:()=>cdDetailView(c), cd:c, tabKey:h }; }
-  if ((m = h.match(/^acct-([\w-]+)$/))){ const a = data.accounts.find(x=>x.id===m[1]); if (a) return { key:"overview", view:()=>accountView(a), acct:a, tabKey:h }; }
-  const map = { cds:[cdsView], alerts:[alertsView], interest:[interestView,true], renewals:[renewalsView,true], preferences:[preferencesView,true] };
+  const map = { interest:[interestView,true], renewals:[renewalsView,true], preferences:[preferencesView,true] };
   if (map[h]) return { key:h, view:map[h][0], wide:!!map[h][1] };
-  return { key:"overview", view:overviewView };
+  return { key:"cds", view:cdsView };
 }
 
 function render(){
@@ -698,31 +552,21 @@ function render(){
   };
   tabs.forEach(b=>b.onclick=()=>showTab(b.dataset.t));
   if (tabs.length) showTab(tabState[r.tabKey] || "details");
+  root.querySelectorAll("[data-tab-jump]").forEach(b=>b.onclick=()=>showTab(b.dataset.tabJump));
 
   const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el[ev] = fn; return el; };
   const fd = e => new FormData(e.target);
 
-  on("addAcctForm","onsubmit", e => {
-    e.preventDefault(); const f = fd(e);
-    data.accounts.push({ id:newId("a"), type:f.get("type"), name:f.get("name").trim(), institution:f.get("institution").trim(),
-      balance:+f.get("balance"), note:"", updated:isoToday() });
-    save(); render(); toast("Account added.");
-  });
+  on("toggleAcct","onclick", () => { revealed[r.cd.id] = !revealed[r.cd.id]; render(); });
 
-  on("editAcctForm","onsubmit", e => {
-    e.preventDefault(); const f = fd(e), a = r.acct, nb = +f.get("balance");
-    if (nb !== a.balance){ (a.history ||= []).push({ date:isoToday(), from:a.balance, to:nb }); a.updated = isoToday(); }
-    Object.assign(a, { name:f.get("name").trim(), type:f.get("type"), institution:f.get("institution").trim(), balance:nb, note:f.get("note").trim() });
-    save(); tabState[r.tabKey] = "details"; render(); toast("Changes saved.");
-  });
-  on("delAcctBtn","onclick", e => confirmInline(e.currentTarget, `Delete "${r.acct.name}"?`, "Delete", () => {
-    data.accounts = data.accounts.filter(a=>a!==r.acct); save(); location.hash = "overview"; toast("Account deleted.");
-  }));
-
-  const readCd = f => ({ bank:f.get("bank").trim(), tag:f.get("tag").trim(), apy:+f.get("apy"), maturity:f.get("maturity"), balance:+f.get("balance") });
+  const readCd = f => {
+    const num = k => f.get(k)==="" ? "" : +f.get(k);
+    return { nickname:f.get("nickname").trim(), bank:f.get("bank").trim(), tag:f.get("tag").trim(), account:f.get("account").trim(),
+             apy:+f.get("apy"), term:f.get("term").trim(), opened:f.get("opened"), maturity:f.get("maturity"),
+             balance:+f.get("balance"), beginBalance:num("beginBalance"), lastRenewal:f.get("lastRenewal") };
+  };
   on("addCdForm","onsubmit", e => {
-    e.preventDefault(); const c = { id:newId("cd"), ...readCd(fd(e)) };
-    data.cds.push(c); save(); render(); toast("CD added.");
+    e.preventDefault(); data.cds.push({ id:newId("cd"), ...readCd(fd(e)) }); save(); render(); toast("CD added.");
   });
   on("editCdForm","onsubmit", e => {
     e.preventDefault(); Object.assign(r.cd, readCd(fd(e)));
@@ -738,7 +582,7 @@ function render(){
     if (parse(newMat) <= parse(f.get("date"))){ msg.className="err"; msg.textContent="New maturity must be after the renewal date."; return; }
     data.renewals.push({ cdId:c.id, date:f.get("date"), oldApy:c.apy, newApy:+f.get("apy"),
       oldMaturity:c.maturity, newMaturity:newMat, oldBalance:c.balance, newBalance:+f.get("balance"), note:f.get("note").trim() });
-    Object.assign(c, { apy:+f.get("apy"), maturity:newMat, balance:+f.get("balance") });
+    Object.assign(c, { apy:+f.get("apy"), maturity:newMat, balance:+f.get("balance"), beginBalance:+f.get("balance"), lastRenewal:f.get("date") });
     save(); tabState[r.tabKey] = "history"; render(); toast("Renewal saved.");
   });
 
@@ -752,7 +596,7 @@ function render(){
     e.target.reset(); msg.className = "msg"; msg.textContent = "Password updated.";
   });
 
-  const backupJson = () => JSON.stringify({ cds:data.cds, accounts:data.accounts, renewals:data.renewals }, null, 2);
+  const backupJson = () => JSON.stringify({ cds:data.cds, renewals:data.renewals }, null, 2);
   on("exportBtn","onclick", async () => {
     const msg = document.getElementById("bkMsg"), filename = `cd-portfolio-${isoToday()}.json`;
     let dl = null;
@@ -781,14 +625,13 @@ function render(){
     let parsed;
     try { parsed = normalize(JSON.parse(document.getElementById("imp-json").value)); }
     catch(err){ msg.className="err"; msg.textContent="That text is not valid JSON."; return; }
-    const btn = document.getElementById("importBtn");
-    confirmInline(btn, `Replace current data with ${parsed.accounts.length} accounts and ${parsed.cds.length} CDs?`, "Replace", () => {
-      Object.assign(data, { cds:parsed.cds, accounts:parsed.accounts, renewals:parsed.renewals });
-      save(); location.hash = "overview"; render(); toast("Backup restored.");
+    confirmInline(document.getElementById("importBtn"), `Replace current data with ${parsed.cds.length} CDs?`, "Replace", () => {
+      Object.assign(data, { cds:parsed.cds, renewals:parsed.renewals });
+      save(); location.hash = "cds"; render(); toast("Backup restored.");
     });
   });
-  on("clearBtn","onclick", e => confirmInline(e.currentTarget, "Delete all accounts, CDs and history?", "Clear all", () => {
-    Object.assign(data, { cds:[], accounts:[], renewals:[] }); save(); location.hash = "overview"; render(); toast("All data cleared.");
+  on("clearBtn","onclick", e => confirmInline(e.currentTarget, "Delete all CDs and renewal records?", "Clear all", () => {
+    Object.assign(data, { cds:[], renewals:[] }); save(); location.hash = "cds"; render(); toast("All data cleared.");
   }));
 
   window.scrollTo(0,0);
