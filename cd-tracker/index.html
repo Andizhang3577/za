@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My CD Portfolio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: top nav, main column of CD cards + a summary sidebar; stacks to one column on phones. */
+  :root{
+    --red:#e31837; --stripe2:#012169; --brand:#012169; --link:#0052c2;
+    --text:#2b2f36; --muted:#5f6672; --line:#e3e6eb; --bg:#f3f4f7; --card:#ffffff; --field:#ffffff; --field-line:#b8bec8;
+    --btn-bg:#012169; --btn-fg:#ffffff; --track:#e6ebf3; --shadow:rgba(10,20,40,.12);
+    --warn-bg:#fff4e5; --warn:#975400; --info-bg:#eaf1fb; --info:#0b4a9e; --due-bg:#fdecee; --due:#b0102a; --ok:#1a7f37;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --red:#ff4d63; --stripe2:#4a6fd6; --brand:#9db8ff; --link:#7fb0ff;
+    --text:#e4e7ec; --muted:#9aa2ae; --line:#2d323c; --bg:#121419; --card:#1b1e25; --field:#14171d; --field-line:#3a404c;
+    --btn-bg:#3f63c8; --btn-fg:#ffffff; --track:#2a3040; --shadow:rgba(0,0,0,.45);
+    --warn-bg:#3a2a12; --warn:#ffc46b; --info-bg:#16263f; --info:#9cc2ff; --due-bg:#3d1820; --due:#ff8a9a; --ok:#5fd37f;
+    color-scheme:dark }}
+  :root[data-theme="dark"]{
+    --red:#ff4d63; --stripe2:#4a6fd6; --brand:#9db8ff; --link:#7fb0ff;
+    --text:#e4e7ec; --muted:#9aa2ae; --line:#2d323c; --bg:#121419; --card:#1b1e25; --field:#14171d; --field-line:#3a404c;
+    --btn-bg:#3f63c8; --btn-fg:#ffffff; --track:#2a3040; --shadow:rgba(0,0,0,.45);
+    --warn-bg:#3a2a12; --warn:#ffc46b; --info-bg:#16263f; --info:#9cc2ff; --due-bg:#3d1820; --due:#ff8a9a; --ok:#5fd37f;
+    color-scheme:dark }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-variant-numeric:tabular-nums;
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px}
+  .gutter{padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+  header{background:var(--card);border-bottom:1px solid var(--line)}
+  .nav{max-width:1132px;margin:0 auto;padding-block:12px;display:flex;align-items:center;gap:8px 20px;flex-wrap:wrap}
+  .brand{font-weight:700;color:var(--brand);font-size:18px;margin-right:8px}
+  .brand small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+  .nav a{color:var(--text);text-decoration:none;font-size:14px;padding:6px 0;border-bottom:2px solid transparent}
+  .nav a.active{color:var(--brand);font-weight:600;border-color:var(--red)}
+  .nav .spacer{flex:1}
+  a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.row:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+  .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;line-height:18px;text-align:center;font-weight:600}
+  .btn{background:var(--btn-bg);color:var(--btn-fg);border:1px solid var(--btn-bg);border-radius:4px;padding:9px 16px;font:inherit;font-size:14px;cursor:pointer}
+  .btn:hover{opacity:.9}
+  .btn.ghost{background:transparent;color:var(--brand);border-color:var(--brand)}
+  .btn.danger{background:var(--due);border-color:var(--due);color:var(--card)}
+  .btn.small{padding:6px 12px;font-size:13px}
+  main{max-width:1132px;margin:0 auto;padding-block:20px 40px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px}
+  main.wide{grid-template-columns:minmax(0,1fr)}
+  @media (max-width:860px){main{grid-template-columns:minmax(0,1fr)}}
+  section,aside{min-width:0}
+  h1{font-size:20px;margin:6px 0 14px;font-weight:600;text-wrap:balance}
+  .card{background:var(--card);border-radius:6px;box-shadow:0 1px 4px var(--shadow);margin-bottom:20px;overflow:hidden}
+  .card::before{content:"";display:block;height:5px;background:linear-gradient(90deg,var(--red) 50%,var(--stripe2) 50%)}
+  .card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 20px}
+  .card-head h2{margin:0;font-size:19px;font-weight:500;min-width:0;overflow-wrap:anywhere}
+  .card-head h2 a{color:inherit;text-decoration:none}
+  .card-head .amt{font-size:19px;font-weight:600;white-space:nowrap}
+  .group{padding:0 20px 8px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .row:last-child{border-bottom:none}
+  .row > span:first-child{min-width:0}
+  .row a{color:var(--link);font-weight:600;text-decoration:none;overflow-wrap:anywhere}
+  .row:hover a{text-decoration:underline}
+  .row .sub{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:3px}
+  .row .bal{white-space:nowrap;text-align:right}
+  .card h3{margin:0;padding:16px 20px 6px;font-size:16px}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:9px 20px;border-bottom:1px solid var(--line);font-size:14px}
+  .kv:last-child{border-bottom:none}
+  .kv span:first-child{color:var(--muted)}
+  .kv span:last-child{text-align:right;overflow-wrap:anywhere}
+  .kv a{color:var(--link);text-decoration:none}
+  .kv .num{white-space:nowrap;flex:none;overflow-wrap:normal}
+  .kv.strong span{color:var(--text);font-weight:700}
+  .back{display:inline-block;margin-bottom:12px;color:var(--link);text-decoration:none;font-size:14px}
+  .back:hover{text-decoration:underline}
+  .hero{padding:18px 20px 22px;border-bottom:1px solid var(--line)}
+  .hero .label{color:var(--muted);font-size:13px}
+  .hero .big{font-size:32px;font-weight:600;margin-top:4px}
+  .hero .meta{margin-top:6px;font-size:13px;color:var(--muted)}
+  .tabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:12px 10px;font:inherit;font-size:14px;cursor:pointer;color:var(--text);white-space:nowrap}
+  .tabs button.on{border-color:var(--red);color:var(--brand);font-weight:600}
+  .panel{padding:4px 0 10px}
+  .bar{margin:10px 20px 4px;height:8px;background:var(--track);border-radius:4px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--stripe2)}
+  .note{font-size:12px;color:var(--muted);padding:8px 20px 14px;line-height:1.5}
+  .alert{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:6px;margin-bottom:10px;font-size:14px;line-height:1.45}
+  .alert b{display:block}
+  .alert a{color:inherit;font-weight:600}
+  .alert.due{background:var(--due-bg);color:var(--due)}
+  .alert.warn{background:var(--warn-bg);color:var(--warn)}
+  .alert.info{background:var(--info-bg);color:var(--info)}
+  .alert .dot{width:10px;height:10px;border-radius:50%;background:currentColor;margin-top:5px;flex:none}
+  .linkbtn{background:none;border:0;padding:0 0 0 8px;font:inherit;font-size:13px;color:var(--link);cursor:pointer}
+  .linkbtn:hover{text-decoration:underline}
+  .panel h3{padding:18px 20px 6px;font-size:14px;color:var(--brand);border-bottom:1px solid var(--line)}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:9px;margin-left:6px;vertical-align:1px;white-space:nowrap}
+  .pill.due{background:var(--due-bg);color:var(--due)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn)}
+  .pill.info{background:var(--info-bg);color:var(--info)}
+  .tbl-wrap{overflow-x:auto;padding:0 20px 12px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{font-weight:600;color:var(--muted);font-size:13px}
+  tfoot td{font-weight:600;border-bottom:none}
+  td a{color:var(--link);text-decoration:none}
+  form.f{padding:12px 20px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 16px}
+  form.f label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}
+  form.f .full{grid-column:1/-1}
+  input,select,textarea{font:inherit;color:var(--text);background:var(--field);padding:8px 10px;border:1px solid var(--field-line);border-radius:4px;min-width:0}
+  textarea{width:100%;min-height:120px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+  .actions{grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .confirm{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--due)}
+  .msg{font-size:13px;color:var(--ok)}
+  .err{font-size:13px;color:var(--due)}
+  .empty{padding:14px 20px 18px;color:var(--muted);font-size:14px;line-height:1.5}
+  .pad{padding:0 20px 18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom, 0px));background:var(--text);color:var(--bg);padding:10px 16px;border-radius:6px;font-size:13px;box-shadow:0 2px 10px var(--shadow);max-width:calc(100% - 32px)}
+  .center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding-block:16px}
+  .lock{width:100%;max-width:380px}
+  .lock .inner{padding:24px 24px 26px}
+  .lock h2{margin:0 0 4px;font-size:20px;color:var(--brand)}
+  .lock p{margin:0 0 18px;color:var(--muted);font-size:14px}
+  .lock input{width:100%;margin-bottom:12px;padding:10px 12px}
+  .lock .btn{width:100%}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="root"><div class="center gutter"><div class="card lock"><div class="inner"><h2>My CD Portfolio</h2><p>Loading your portfolio…</p></div></div></div></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* ================= constants ================= */
+const DOC_PATH = "portfolio/main";
+const LOCAL_KEY = "cdp.data";
+
+/* ================= state + storage ================= */
+// mode: "db" (claude.ai artifact database), "local" (this browser only)
+let mode = null, docRef = null, data = null, lastSaved = "", loadTimer = null, loadNote = "";
+const tabState = {}, revealed = {};
+
+const emptyData = () => ({ cds: [], renewals: [], pwHash: null });
+function normalize(o){
+  o = (o && typeof o === "object") ? JSON.parse(JSON.stringify(o)) : {};
+  return { cds: Array.isArray(o.cds) ? o.cds : [], renewals: Array.isArray(o.renewals) ? o.renewals : [], pwHash: o.pwHash || null };
+}
+const lsGet = (k, s) => { try{ return JSON.parse((s||localStorage).getItem(k)); }catch(e){ return null; } };
+const lsSet = (k, v, s) => { try{ (s||localStorage).setItem(k, JSON.stringify(v)); }catch(e){} };
+const lsDel = (k, s) => { try{ (s||localStorage).removeItem(k); }catch(e){} };
+let ss = null; try{ ss = window.sessionStorage; }catch(e){}
+
+let writing = false, dirty = false;
+async function save(){
+  lastSaved = JSON.stringify(data);
+  if (mode === "local"){ lsSet(LOCAL_KEY, data); return; }
+  if (writing){ dirty = true; return; }
+  writing = true;
+  do {
+    dirty = false;
+    try { await docRef.set(JSON.parse(JSON.stringify(data))); }
+    catch(e){
+      if (e && e.code === "unavailable"){ await new Promise(r=>setTimeout(r, 800 + Math.random()*800)); dirty = true; }
+      else if (e && e.code === "quota_exceeded"){ toast("Storage is full. Delete some records and try again."); }
+      else { toast("Changes could not be saved. You may not have edit access to this page."); }
+    }
+  } while (dirty);
+  writing = false;
+}
+
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toast._t); toast._t = setTimeout(()=>{ t.hidden = true; }, 4000);
+}
+
+async function boot(){
+  let db = null;
+  if (window.claude && typeof window.claude.use === "function"){
+    try { db = await window.claude.use("db"); } catch(e){ db = null; }
+  }
+  if (db){
+    mode = "db";
+    docRef = db.doc(DOC_PATH);
+    loadTimer = setTimeout(()=>{
+      loadNote = "Your saved data can't be reached right now. Changes may not be up to date.";
+      if (!data){ data = emptyData(); }
+      render();
+    }, 10000);
+    docRef.onSnapshot(snap => {
+      const incoming = normalize(snap.exists ? snap.data() : null);
+      if (!snap.metadata.fromCache){ clearTimeout(loadTimer); loadNote = ""; }
+      const s = JSON.stringify(incoming);
+      if (data && s === JSON.stringify(data)) return;
+      if (data && s === lastSaved) return;
+      data = incoming;
+      const ae = document.activeElement;
+      if (ae && ae.closest && ae.closest("form") && unlocked()) { render.pending = true; return; }
+      render();
+    }, () => {
+      clearTimeout(loadTimer);
+      loadNote = "Your saved data is not available in this view.";
+      if (!data) data = emptyData();
+      render();
+    });
+  } else {
+    mode = "local";
+    data = normalize(lsGet(LOCAL_KEY));
+    const oldPw = lsGet("cdp.pw");
+    if (!data.pwHash && oldPw){ data.pwHash = oldPw; lsSet(LOCAL_KEY, data); }
+    render();
+  }
+}
+
+/* ================= helpers ================= */
+const usd = n => (+n||0).toLocaleString("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2});
+const parse = s => { const [y,m,d] = String(s).split("-").map(Number); return new Date(y,(m||1)-1,d||1); };
+const fmtDate = s => { if(!s) return "—"; const d = parse(s); return `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`; };
+const isoToday = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; };
+const today = () => parse(isoToday());
+const remainingDays = s => Math.max(0, Math.round((parse(s) - today())/86400000));
+const rate = c => `${(+c.apy).toFixed(2)}%`;
+const title = c => c.nickname || `${c.bank || "CD"} CD (${c.tag ? c.tag + "; " : ""}${rate(c)}; ${fmtDate(c.maturity)})`;
+const mask = n => n ? "••••" + String(n).replace(/\s/g,"").slice(-4) : "";
+const annualInt = c => c.balance * c.apy / 100;
+const intToMaturity = c => c.balance * (c.apy/100) * remainingDays(c.maturity) / 365;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const cdTotal = () => data.cds.reduce((a,c)=>a+c.balance,0);
+const byMaturity = () => [...data.cds].sort((a,b)=>parse(a.maturity)-parse(b.maturity));
+const wRate = list => { const t = list.reduce((a,c)=>a+c.balance,0); return t ? list.reduce((a,c)=>a+c.apy*c.balance,0)/t : 0; };
+
+/* ================= password lock ================= */
+async function hash(pw){
+  const salted = "cdp:" + pw;
+  if (window.crypto && crypto.subtle){
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salted));
+    return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+  let h = 2166136261; for (const ch of salted){ h ^= ch.charCodeAt(0); h = Math.imul(h,16777619); } return "f" + (h>>>0).toString(16);
+}
+const unlocked = () => ss ? lsGet("cdp.unlocked", ss) === true : window.__unlocked === true;
+const setUnlocked = v => { window.__unlocked = v; if (ss){ v ? lsSet("cdp.unlocked", true, ss) : lsDel("cdp.unlocked", ss); } };
+
+function lockView(){
+  const first = !data.pwHash;
+  return `
+  <div class="center gutter"><div class="card lock"><div class="inner">
+    <h2>My CD Portfolio</h2>
+    <p>${first ? "Create a password to protect this page." : "Enter your password to continue."}</p>
+    <form id="lockForm" autocomplete="off">
+      <input type="password" id="pw1" placeholder="Password" aria-label="Password" required autofocus>
+      ${first ? `<input type="password" id="pw2" placeholder="Confirm password" aria-label="Confirm password" required>` : ""}
+      <button class="btn" type="submit">${first ? "Set password" : "Unlock"}</button>
+      <div class="err" id="lockErr" style="margin-top:10px"></div>
+    </form>
+  </div></div></div>`;
+}
+function bindLock(){
+  document.getElementById("lockForm").onsubmit = async e => {
+    e.preventDefault();
+    const pw1 = document.getElementById("pw1").value, pw2el = document.getElementById("pw2");
+    const err = document.getElementById("lockErr");
+    if (pw2el){
+      if (pw1.length < 4) return err.textContent = "Use at least 4 characters.";
+      if (pw1 !== pw2el.value) return err.textContent = "Passwords do not match.";
+      data.pwHash = await hash(pw1); save();
+    } else if (await hash(pw1) !== data.pwHash){
+      return err.textContent = "Incorrect password.";
+    }
+    setUnlocked(true); render();
+  };
+}
+
+/* ================= inline confirm (dialogs are blocked in the viewer) ================= */
+function confirmInline(btn, text, yesLabel, onYes){
+  if (btn.nextElementSibling && btn.nextElementSibling.classList.contains("confirm")) return;
+  const box = document.createElement("span");
+  box.className = "confirm";
+  box.innerHTML = `<span>${esc(text)}</span><button type="button" class="btn small danger">${esc(yesLabel)}</button><button type="button" class="btn ghost small">Cancel</button>`;
+  btn.hidden = true; btn.after(box);
+  const [yes, no] = box.querySelectorAll("button");
+  no.onclick = () => { box.remove(); btn.hidden = false; btn.focus(); };
+  yes.onclick = onYes;
+  yes.focus();
+}
+
+/* ================= layout ================= */
+function shell(route, body, wide){
+  const link = (h, label, key) => `<a href="#${h}" class="${route===key?"active":""}">${label}</a>`;
+  return `
+  <header class="gutter"><div class="nav">
+    <div class="brand">My CD Portfolio<small>Personal CD tracker</small></div>
+    ${link("cds","CDs","cds")}
+    ${link("interest","Interest","interest")}
+    ${link("renewals","Renewals","renewals")}
+    ${link("preferences","Preferences","preferences")}
+    <span class="spacer"></span>
+    <button class="btn ghost small" id="lockBtn" type="button">Lock</button>
+  </div></header>
+  <main class="gutter ${wide?"wide":""}">${loadNote?`<div class="alert warn" style="grid-column:1/-1;margin:0"><span class="dot"></span><span>${esc(loadNote)}</span></div>`:""}${body}</main>`;
+}
+
+/* ================= views ================= */
+function cdForm(c, id){
+  const v = k => esc(c?.[k] ?? "");
+  return `
+  <form class="f" id="${id}">
+    <label>Nickname<input id="${id}-nick" name="nickname" value="${v("nickname")}" placeholder="e.g. 7 Month CD"></label>
+    <label>Institution<input id="${id}-bank" name="bank" value="${v("bank")}" required></label>
+    <label>Label<input id="${id}-tag" name="tag" value="${v("tag")}" placeholder="Optional"></label>
+    <label>Account number<input id="${id}-acct" name="account" value="${v("account")}" placeholder="From your statement" inputmode="numeric" autocomplete="off"></label>
+    <label>Interest rate (%)<input id="${id}-apy" type="number" name="apy" step="0.01" min="0" value="${c?(+c.apy).toFixed(2):""}" required></label>
+    <label>Term<input id="${id}-term" name="term" value="${v("term")}" placeholder="e.g. 7 months"></label>
+    <label>Date opened<input id="${id}-open" type="date" name="opened" value="${v("opened")}"></label>
+    <label>Maturity date<input id="${id}-mat" type="date" name="maturity" value="${v("maturity")}" required></label>
+    <label>Current balance ($)<input id="${id}-bal" type="number" name="balance" step="0.01" min="0" value="${c?(+c.balance).toFixed(2):""}" required></label>
+    <label>Beginning balance this term ($)<input id="${id}-beg" type="number" name="beginBalance" step="0.01" min="0" value="${c&&c.beginBalance!=null&&c.beginBalance!==""?(+c.beginBalance).toFixed(2):""}"></label>
+    <label>Last renewal date<input id="${id}-ren" type="date" name="lastRenewal" value="${v("lastRenewal")}"></label>
+    <div class="actions"><button class="btn" type="submit">${c ? "Save changes" : "Add CD"}</button>
+      ${c ? `<button class="btn ghost" type="button" id="delCdBtn">Delete CD</button>` : ""}</div>
+  </form>`;
+}
+
+function cdsView(){
+  const t = cdTotal(), sorted = byMaturity();
+  const banks = [...new Set(data.cds.map(c=>c.bank || "Other"))];
+  return `
+  <section>
+    <h1>Certificates of Deposit</h1>
+    <div class="card">
+      <div class="card-head"><h2>Tracked CDs</h2><span class="amt">${usd(t)}</span></div>
+      ${data.cds.length ? banks.map(b=>`
+      <div class="group">
+        <div class="kv" style="padding:10px 0;font-weight:600"><span style="color:var(--text)">${esc(b)}</span><span></span></div>
+        ${data.cds.filter(c=>(c.bank||"Other")===b).map(c=>`
+          <div class="row" tabindex="0" data-go="cd-${c.id}">
+            <span><a href="#cd-${c.id}">${esc(title(c))}</a>
+              <span class="sub">${c.account?`Account ${esc(mask(c.account))} · `:""}Interest rate ${rate(c)} · Matures ${fmtDate(c.maturity)}</span></span>
+            <span class="bal">${usd(c.balance)}</span>
+          </div>`).join("")}
+      </div>`).join("") : `<div class="empty">No CDs yet. Add your first CD with the form below.</div>`}
+    </div>
+    <div class="card"><h3>Add a CD</h3>${cdForm(null, "addCdForm")}</div>
+  </section>
+  <aside>
+    <div class="card">
+      <h3>Summary</h3>
+      <div class="kv"><span>Number of CDs</span><span>${data.cds.length}</span></div>
+      <div class="kv"><span>Total balance</span><span>${usd(t)}</span></div>
+      <div class="kv"><span>Weighted avg. rate</span><span>${wRate(data.cds).toFixed(2)}%</span></div>
+      <div class="kv"><span>Est. annual interest</span><span>${usd(data.cds.reduce((a,c)=>a+annualInt(c),0))}</span></div>
+    </div>
+    ${sorted.length ? `<div class="card">
+      <h3>Maturity dates</h3>
+      ${sorted.map(c=>`<div class="kv"><span><a href="#cd-${c.id}">${fmtDate(c.maturity)}</a></span><span class="num">${usd(c.balance)}</span></div>`).join("")}
+    </div>` : ""}
+  </aside>`;
+}
+
+function historyTable(rows, withCd){
+  const cdName = id => { const c = data.cds.find(x=>x.id===id); return c ? title(c) : "Removed CD"; };
+  return `<div class="tbl-wrap"><table>
+    <thead><tr>${withCd?"<th>CD</th>":""}<th${withCd?"":' style="text-align:left"'}>Renewed</th><th>Old rate</th><th>New rate</th><th>Old maturity</th><th>New maturity</th><th>Old balance</th><th>New balance</th><th style="text-align:left">Note</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      ${withCd?`<td><a href="#cd-${esc(r.cdId)}">${esc(cdName(r.cdId))}</a></td>`:""}
+      <td${withCd?"":' style="text-align:left"'}>${fmtDate(r.date)}</td><td>${(+r.oldApy).toFixed(2)}%</td><td>${(+r.newApy).toFixed(2)}%</td>
+      <td>${fmtDate(r.oldMaturity)}</td><td>${fmtDate(r.newMaturity)}</td><td>${usd(r.oldBalance)}</td><td>${usd(r.newBalance)}</td>
+      <td style="text-align:left;white-space:normal">${esc(r.note||"")}</td></tr>`).join("")}</tbody>
+  </table></div>`;
+}
+
+function cdDetailView(c){
+  const t = cdTotal(), share = t ? c.balance/t*100 : 0;
+  const hist = data.renewals.filter(r=>r.cdId===c.id).slice().reverse();
+  const show = !!revealed[c.id];
+  const dash = v => (v===undefined || v===null || v==="") ? "—" : v;
+  return `
+  <section>
+    <a class="back" href="#cds">‹ Back to CDs</a>
+    <div class="card">
+      <div class="card-head"><h2>${esc(title(c))}</h2></div>
+      <div class="hero">
+        <div class="label">Current balance</div>
+        <div class="big">${usd(c.balance)}</div>
+        <div class="meta">Interest rate ${rate(c)} · Matures ${fmtDate(c.maturity)}</div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button type="button" data-t="details">Details</button>
+        <button type="button" data-t="interest">Interest</button>
+        <button type="button" data-t="renew">Record renewal</button>
+        <button type="button" data-t="history">Renewal history${hist.length?` (${hist.length})`:""}</button>
+        <button type="button" data-t="edit">Edit</button>
+      </div>
+      <div class="panel" id="p-details">
+        <h3>Account details</h3>
+        <div class="kv"><span>Nickname</span><span>${esc(title(c))}</span></div>
+        <div class="kv"><span>Account number</span><span>${c.account
+          ? `${esc(show ? c.account : mask(c.account))} <button type="button" class="linkbtn" id="toggleAcct">${show?"Hide":"Show"}</button>`
+          : `— <button type="button" class="linkbtn" data-tab-jump="edit">Add</button>`}</span></div>
+        <div class="kv"><span>Institution</span><span>${esc(dash(c.bank))}</span></div>
+        <div class="kv"><span>Current balance</span><span>${usd(c.balance)}</span></div>
+        <div class="kv"><span>Date opened</span><span>${fmtDate(c.opened)}</span></div>
+        <div class="kv"><span>Term</span><span>${esc(dash(c.term))}</span></div>
+        <div class="kv"><span>Maturity date</span><span>${fmtDate(c.maturity)}</span></div>
+        <h3>Deposit</h3>
+        <div class="kv"><span>Beginning balance this term</span><span>${c.beginBalance!=null && c.beginBalance!=="" ? usd(c.beginBalance) : "—"}</span></div>
+        <div class="kv"><span>Last renewal date</span><span>${fmtDate(c.lastRenewal)}</span></div>
+        <h3>Interest</h3>
+        <div class="kv"><span>Interest rate</span><span>${rate(c)}</span></div>
+        <div class="kv"><span>Est. annual interest</span><span>${usd(annualInt(c))}</span></div>
+        <div class="kv"><span>Share of CD portfolio</span><span>${share.toFixed(1)}%</span></div>
+        <div class="bar"><i style="width:${share.toFixed(1)}%"></i></div>
+      </div>
+      <div class="panel" id="p-interest" hidden>
+        <div class="kv"><span>Est. annual interest</span><span>${usd(annualInt(c))}</span></div>
+        <div class="kv"><span>Est. monthly interest</span><span>${usd(annualInt(c)/12)}</span></div>
+        <div class="kv"><span>Est. interest through maturity</span><span>${usd(intToMaturity(c))}</span></div>
+        <div class="kv"><span>Est. value at maturity</span><span>${usd(c.balance+intToMaturity(c))}</span></div>
+        <div class="note">Estimates use current balance × interest rate × time remaining. Actual interest depends on the bank's compounding and crediting schedule.</div>
+      </div>
+      <div class="panel" id="p-renew" hidden>
+        <form class="f" id="renewForm">
+          <label>Renewal date<input id="rn-date" type="date" name="date" value="${esc(c.maturity)}" required></label>
+          <label>New interest rate (%)<input id="rn-apy" type="number" name="apy" step="0.01" min="0" value="${(+c.apy).toFixed(2)}" required></label>
+          <label>New maturity date<input id="rn-mat" type="date" name="maturity" required></label>
+          <label>New balance ($)<input id="rn-bal" type="number" name="balance" step="0.01" min="0" value="${(c.balance+intToMaturity(c)).toFixed(2)}" required></label>
+          <label class="full">Note<input id="rn-note" type="text" name="note" placeholder="Optional, e.g. renewed for 7 months"></label>
+          <div class="actions"><button class="btn" type="submit">Save renewal</button><span id="renewMsg"></span></div>
+        </form>
+      </div>
+      <div class="panel" id="p-history" hidden>
+        ${hist.length ? historyTable(hist, false) : `<div class="empty">No renewals recorded for this CD yet.</div>`}
+      </div>
+      <div class="panel" id="p-edit" hidden>${cdForm(c, "editCdForm")}</div>
+    </div>
+  </section>
+  <aside>
+    <div class="card">
+      <h3>Other CDs</h3>
+      ${data.cds.filter(x=>x.id!==c.id).map(x=>`
+        <div class="kv"><span><a href="#cd-${x.id}">${esc(title(x))}</a></span><span class="num">${usd(x.balance)}</span></div>`).join("") || `<div class="empty">No other CDs.</div>`}
+    </div>
+  </aside>`;
+}
+
+function interestView(){
+  const cds = byMaturity();
+  if (!cds.length) return `<section><h1>Interest summary</h1><div class="card"><div class="empty">Add a CD to see interest estimates.</div></div></section>`;
+  const sum = f => cds.reduce((a,c)=>a+f(c),0);
+  const t = cdTotal();
+  return `
+  <section>
+    <h1>Interest summary</h1>
+    <div class="card">
+      <div class="card-head"><h2>Estimated interest by CD</h2><span class="amt">${usd(sum(intToMaturity))}</span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>CD</th><th>Balance</th><th>Rate</th><th>Annual</th><th>Monthly</th><th>Through maturity</th><th>Value at maturity</th></tr></thead>
+        <tbody>${cds.map(c=>`<tr>
+          <td><a href="#cd-${c.id}">${esc(title(c))}</a></td>
+          <td>${usd(c.balance)}</td><td>${rate(c)}</td><td>${usd(annualInt(c))}</td>
+          <td>${usd(annualInt(c)/12)}</td><td>${usd(intToMaturity(c))}</td><td>${usd(c.balance+intToMaturity(c))}</td></tr>`).join("")}
+        </tbody>
+        <tfoot><tr><td>Total</td><td>${usd(t)}</td><td>${wRate(cds).toFixed(2)}%</td>
+          <td>${usd(sum(annualInt))}</td><td>${usd(sum(annualInt)/12)}</td><td>${usd(sum(intToMaturity))}</td><td>${usd(t+sum(intToMaturity))}</td></tr></tfoot>
+      </table></div>
+      <div class="note">Estimates use current balance × interest rate × time remaining. The total rate is weighted by balance.</div>
+    </div>
+  </section>`;
+}
+
+function renewalsView(){
+  const rows = data.renewals.slice().reverse();
+  return `
+  <section>
+    <h1>Renewal records</h1>
+    <div class="card">
+      <div class="card-head"><h2>All renewals</h2><span class="amt">${rows.length}</span></div>
+      ${rows.length ? historyTable(rows, true) : `<div class="empty">No renewals recorded yet. Open a CD and use the “Record renewal” tab when it renews.</div>`}
+    </div>
+  </section>`;
+}
+
+function preferencesView(){
+  return `
+  <section>
+    <h1>Preferences</h1>
+    <div class="card">
+      <h3>Change password</h3>
+      <form class="f" id="pwForm" autocomplete="off">
+        <label>Current password<input id="pf-cur" type="password" name="cur" required></label>
+        <label>New password<input id="pf-n1" type="password" name="n1" required></label>
+        <label>Confirm new password<input id="pf-n2" type="password" name="n2" required></label>
+        <div class="actions"><button class="btn" type="submit">Update password</button><span id="pwMsg"></span></div>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Backup</h3>
+      <div class="note" style="padding-top:4px">${mode==="db" ? "Your CDs and history are saved with this page, so they appear on any device where you open it." : "Your data is saved in this browser only. Export a backup before clearing browser data or switching devices."}</div>
+      <div class="pad">
+        <button class="btn ghost" type="button" id="exportBtn">Download backup (JSON)</button>
+        <button class="btn ghost" type="button" id="copyBtn">Copy backup</button>
+        <span id="bkMsg"></span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Restore from backup</h3>
+      <form class="f" id="importForm">
+        <label class="full">Paste backup JSON<textarea id="imp-json" name="json" required placeholder='{"cds":[...],"renewals":[...]}'></textarea></label>
+        <div class="actions"><button class="btn" type="submit" id="importBtn">Restore</button><span id="impMsg"></span></div>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Clear data</h3>
+      <div class="note" style="padding-top:4px">Removes all CDs and renewal records. Your password stays the same.</div>
+      <div class="pad"><button class="btn ghost" type="button" id="clearBtn">Clear all data</button></div>
+    </div>
+  </section>`;
+}
+
+/* ================= router ================= */
+function currentRoute(){
+  const h = location.hash.replace(/^#\/?/, "");
+  let m;
+  if ((m = h.match(/^cd-([\w-]+)$/))){ const c = data.cds.find(x=>x.id===m[1]); if (c) return { key:"cds", view:()=>cdDetailView(c), cd:c, tabKey:h }; }
+  const map = { interest:[interestView,true], renewals:[renewalsView,true], preferences:[preferencesView,true] };
+  if (map[h]) return { key:h, view:map[h][0], wide:!!map[h][1] };
+  return { key:"cds", view:cdsView };
+}
+
+function render(){
+  render.pending = false;
+  const root = document.getElementById("root");
+  if (!data) return;
+  if (!unlocked()){ root.innerHTML = lockView(); bindLock(); return; }
+
+  const r = currentRoute();
+  root.innerHTML = shell(r.key, r.view(), r.wide);
+
+  document.getElementById("lockBtn").onclick = () => { setUnlocked(false); render(); };
+  root.querySelectorAll("[data-go]").forEach(el=>{
+    el.onclick = e => { if (e.target.closest("a")) return; location.hash = el.dataset.go; };
+    el.onkeydown = e => { if (e.key === "Enter") location.hash = el.dataset.go; };
+  });
+
+  // tabs (remember the open tab per page so live updates don't reset it)
+  const tabs = root.querySelectorAll(".tabs button");
+  const showTab = t => {
+    tabs.forEach(x=>{ const on = x.dataset.t===t; x.classList.toggle("on",on); x.setAttribute("aria-selected", on); });
+    root.querySelectorAll(".panel").forEach(p=>p.hidden = p.id!=="p-"+t);
+    if (r.tabKey) tabState[r.tabKey] = t;
+  };
+  tabs.forEach(b=>b.onclick=()=>showTab(b.dataset.t));
+  if (tabs.length) showTab(tabState[r.tabKey] || "details");
+  root.querySelectorAll("[data-tab-jump]").forEach(b=>b.onclick=()=>showTab(b.dataset.tabJump));
+
+  const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el[ev] = fn; return el; };
+  const fd = e => new FormData(e.target);
+
+  on("toggleAcct","onclick", () => { revealed[r.cd.id] = !revealed[r.cd.id]; render(); });
+
+  const readCd = f => {
+    const num = k => f.get(k)==="" ? "" : +f.get(k);
+    return { nickname:f.get("nickname").trim(), bank:f.get("bank").trim(), tag:f.get("tag").trim(), account:f.get("account").trim(),
+             apy:+f.get("apy"), term:f.get("term").trim(), opened:f.get("opened"), maturity:f.get("maturity"),
+             balance:+f.get("balance"), beginBalance:num("beginBalance"), lastRenewal:f.get("lastRenewal") };
+  };
+  on("addCdForm","onsubmit", e => {
+    e.preventDefault(); data.cds.push({ id:newId("cd"), ...readCd(fd(e)) }); save(); render(); toast("CD added.");
+  });
+  on("editCdForm","onsubmit", e => {
+    e.preventDefault(); Object.assign(r.cd, readCd(fd(e)));
+    save(); tabState[r.tabKey] = "details"; render(); toast("Changes saved.");
+  });
+  on("delCdBtn","onclick", e => confirmInline(e.currentTarget, "Delete this CD?", "Delete", () => {
+    data.cds = data.cds.filter(c=>c!==r.cd); save(); location.hash = "cds"; toast("CD deleted.");
+  }));
+
+  on("renewForm","onsubmit", e => {
+    e.preventDefault(); const c = r.cd, f = fd(e), msg = document.getElementById("renewMsg");
+    const newMat = f.get("maturity");
+    if (parse(newMat) <= parse(f.get("date"))){ msg.className="err"; msg.textContent="New maturity must be after the renewal date."; return; }
+    data.renewals.push({ cdId:c.id, date:f.get("date"), oldApy:c.apy, newApy:+f.get("apy"),
+      oldMaturity:c.maturity, newMaturity:newMat, oldBalance:c.balance, newBalance:+f.get("balance"), note:f.get("note").trim() });
+    Object.assign(c, { apy:+f.get("apy"), maturity:newMat, balance:+f.get("balance"), beginBalance:+f.get("balance"), lastRenewal:f.get("date") });
+    save(); tabState[r.tabKey] = "history"; render(); toast("Renewal saved.");
+  });
+
+  on("pwForm","onsubmit", async e => {
+    e.preventDefault(); const f = fd(e), msg = document.getElementById("pwMsg");
+    msg.className = "err";
+    if (await hash(f.get("cur")) !== data.pwHash) return msg.textContent = "Current password is incorrect.";
+    if (f.get("n1").length < 4) return msg.textContent = "Use at least 4 characters.";
+    if (f.get("n1") !== f.get("n2")) return msg.textContent = "New passwords do not match.";
+    data.pwHash = await hash(f.get("n1")); save();
+    e.target.reset(); msg.className = "msg"; msg.textContent = "Password updated.";
+  });
+
+  const backupJson = () => JSON.stringify({ cds:data.cds, renewals:data.renewals }, null, 2);
+  on("exportBtn","onclick", async () => {
+    const msg = document.getElementById("bkMsg"), filename = `cd-portfolio-${isoToday()}.json`;
+    let dl = null;
+    if (window.claude && window.claude.use){ try{ dl = await window.claude.use("downloads"); }catch(e){} }
+    if (dl){
+      try { await dl.save({ filename, data: backupJson() }); msg.className="msg"; msg.textContent="Backup saved."; }
+      catch(err){ msg.className="err"; msg.textContent = err && err.code==="declined" ? "Download cancelled." : "Download is not available here. Use Copy backup instead."; }
+      return;
+    }
+    if (mode === "local"){
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([backupJson()],{type:"application/json"}));
+      a.download = filename; a.click(); return;
+    }
+    msg.className="err"; msg.textContent="Download is not available here. Use Copy backup instead.";
+  });
+  on("copyBtn","onclick", () => {
+    const msg = document.getElementById("bkMsg");
+    navigator.clipboard.writeText(backupJson()).then(
+      () => { msg.className="msg"; msg.textContent="Backup copied to clipboard."; },
+      () => { const ta = document.getElementById("imp-json"); ta.value = backupJson(); ta.focus(); ta.select();
+              msg.className="err"; msg.textContent="Clipboard blocked. The backup is selected in the Restore box below; copy it from there."; });
+  });
+  on("importForm","onsubmit", e => {
+    e.preventDefault(); const msg = document.getElementById("impMsg");
+    let parsed;
+    try { parsed = normalize(JSON.parse(document.getElementById("imp-json").value)); }
+    catch(err){ msg.className="err"; msg.textContent="That text is not valid JSON."; return; }
+    confirmInline(document.getElementById("importBtn"), `Replace current data with ${parsed.cds.length} CDs?`, "Replace", () => {
+      Object.assign(data, { cds:parsed.cds, renewals:parsed.renewals });
+      save(); location.hash = "cds"; render(); toast("Backup restored.");
+    });
+  });
+  on("clearBtn","onclick", e => confirmInline(e.currentTarget, "Delete all CDs and renewal records?", "Clear all", () => {
+    Object.assign(data, { cds:[], renewals:[] }); save(); location.hash = "cds"; render(); toast("All data cleared.");
+  }));
+
+  window.scrollTo(0,0);
+}
+window.addEventListener("hashchange", render);
+document.addEventListener("focusout", () => setTimeout(()=>{ if (render.pending && !(document.activeElement && document.activeElement.closest && document.activeElement.closest("form"))) render(); }, 0));
+boot();
+</script>
+</body>
+</html>
