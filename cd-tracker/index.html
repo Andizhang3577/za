@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,24 +8,32 @@
   :root{
     --red:#e31837; --navy:#012169; --link:#0052c2; --text:#333; --muted:#666;
     --line:#e5e5e5; --bg:#f5f5f5; --card:#fff;
+    --warn-bg:#fff4e5; --warn:#a15c00; --info-bg:#eaf1fb; --info:#0b4a9e; --due-bg:#fdecee; --due:#b0102a;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);
     font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px}
   header{background:#fff;border-bottom:1px solid var(--line)}
-  .nav{max-width:1100px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
-  .brand{font-weight:700;color:var(--navy);font-size:18px}
+  .nav{max-width:1100px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .brand{font-weight:700;color:var(--navy);font-size:18px;margin-right:8px}
   .brand small{display:block;font-weight:400;color:var(--muted);font-size:12px}
-  .nav a{color:#444;text-decoration:none;font-size:14px}
-  .nav a.active{color:var(--navy);font-weight:600}
-  main{max-width:1100px;margin:0 auto;padding:20px 16px 40px;display:grid;grid-template-columns:1fr 320px;gap:24px}
-  @media (max-width:860px){main{grid-template-columns:1fr}}
+  .nav a{color:#444;text-decoration:none;font-size:14px;padding:6px 0;border-bottom:2px solid transparent}
+  .nav a.active{color:var(--navy);font-weight:600;border-color:var(--red)}
+  .nav .spacer{flex:1}
+  .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;line-height:18px;text-align:center;font-weight:600}
+  .btn{background:var(--navy);color:#fff;border:0;border-radius:4px;padding:9px 16px;font-size:14px;cursor:pointer}
+  .btn:hover{opacity:.9}
+  .btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  .btn.small{padding:6px 12px;font-size:13px}
+  main{max-width:1100px;margin:0 auto;padding:20px 16px 40px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px}
+  main.wide{grid-template-columns:minmax(0,1fr)}
+  @media (max-width:860px){main{grid-template-columns:minmax(0,1fr)}}
   h1{font-size:20px;margin:6px 0 14px;font-weight:600}
   .card{background:var(--card);border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.12);margin-bottom:20px;overflow:hidden}
   .card::before{content:"";display:block;height:5px;background:linear-gradient(90deg,var(--red) 50%,var(--navy) 50%)}
-  .card-head{display:flex;justify-content:space-between;align-items:center;padding:18px 20px}
+  .card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 20px}
   .card-head h2{margin:0;font-size:19px;font-weight:500}
-  .card-head .amt{font-size:19px;font-weight:600}
+  .card-head .amt{font-size:19px;font-weight:600;white-space:nowrap}
   .group{padding:0 20px 8px}
   .group-title{font-weight:600;font-size:14px;padding:10px 0;border-bottom:1px solid var(--line)}
   .row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}
@@ -34,9 +42,8 @@
   .row:hover a{text-decoration:underline}
   .row .sub{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:3px}
   .row .bal{white-space:nowrap;text-align:right}
-  .side .card{padding-bottom:6px}
-  .side h3{margin:0;padding:16px 20px 6px;font-size:16px}
-  .kv{display:flex;justify-content:space-between;padding:9px 20px;border-bottom:1px solid var(--line);font-size:14px}
+  .side h3,.card h3{margin:0;padding:16px 20px 6px;font-size:16px}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:9px 20px;border-bottom:1px solid var(--line);font-size:14px}
   .kv:last-child{border-bottom:none}
   .kv span:first-child{color:var(--muted)}
   .back{display:inline-block;margin-bottom:12px;color:var(--link);text-decoration:none;font-size:14px}
@@ -45,75 +52,195 @@
   .hero .label{color:var(--muted);font-size:13px}
   .hero .big{font-size:32px;font-weight:600;margin-top:4px}
   .hero .meta{margin-top:6px;font-size:13px;color:var(--muted)}
-  .tabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--line)}
-  .tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:12px 10px;font-size:14px;cursor:pointer;color:#444}
+  .tabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:12px 10px;font-size:14px;cursor:pointer;color:#444;white-space:nowrap}
   .tabs button.on{border-color:var(--red);color:var(--navy);font-weight:600}
   .panel{padding:4px 0 10px}
   .bar{margin:10px 20px 4px;height:8px;background:#e9edf5;border-radius:4px;overflow:hidden}
   .bar i{display:block;height:100%;background:var(--navy)}
   .note{font-size:12px;color:var(--muted);padding:8px 20px 14px;line-height:1.5}
-  footer{max-width:1100px;margin:0 auto;padding:0 16px 30px;font-size:12px;color:var(--muted)}
+  .alert{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:6px;margin-bottom:10px;font-size:14px;line-height:1.45}
+  .alert b{display:block}
+  .alert a{color:inherit;font-weight:600}
+  .alert.due{background:var(--due-bg);color:var(--due)}
+  .alert.warn{background:var(--warn-bg);color:var(--warn)}
+  .alert.info{background:var(--info-bg);color:var(--info)}
+  .alert .dot{width:10px;height:10px;border-radius:50%;background:currentColor;margin-top:5px;flex:none}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:9px;margin-left:6px;vertical-align:1px}
+  .pill.due{background:var(--due-bg);color:var(--due)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn)}
+  .pill.info{background:var(--info-bg);color:var(--info)}
+  .tbl-wrap{overflow-x:auto;padding:0 20px 12px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{font-weight:600;color:var(--muted);font-size:13px}
+  tfoot td{font-weight:600;border-bottom:none}
+  td a{color:var(--link);text-decoration:none}
+  form.f{padding:12px 20px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 16px}
+  form.f label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}
+  form.f input{font:inherit;color:var(--text);padding:8px 10px;border:1px solid #bbb;border-radius:4px}
+  form.f .actions{grid-column:1/-1;display:flex;gap:10px;align-items:center}
+  .msg{font-size:13px;color:#1a7f37}
+  .err{font-size:13px;color:var(--due)}
+  .empty{padding:14px 20px 18px;color:var(--muted);font-size:14px}
+  /* lock screen */
+  .lock-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+  .lock{width:100%;max-width:380px}
+  .lock .inner{padding:24px 24px 26px}
+  .lock h2{margin:0 0 4px;font-size:20px;color:var(--navy)}
+  .lock p{margin:0 0 18px;color:var(--muted);font-size:14px}
+  .lock input{width:100%;font:inherit;padding:10px 12px;border:1px solid #bbb;border-radius:4px;margin-bottom:12px}
+  .lock .btn{width:100%}
 </style>
 </head>
 <body>
-<header>
-  <div class="nav">
-    <div class="brand">My CD Portfolio<small>个人存单记录 · Personal tracker</small></div>
-    <a href="#/" class="active">Accounts</a>
-    <a href="#/">Certificates of Deposit</a>
-  </div>
-</header>
-
-<main id="app"></main>
-
-<footer>本页面为个人存单记录工具，数据由本人手动录入，不是银行官方页面或对账单。<br>
-Personal record only — not an official bank page or statement.</footer>
+<div id="root"></div>
 
 <script>
-const CDS = [
+/* ---------- default data ---------- */
+const DEFAULT_CDS = [
   { id:"cd1", bank:"Bank of America", tag:"AD", apy:3.70, maturity:"2027-05-27", balance:137150 },
   { id:"cd2", bank:"Bank of America", tag:"AD", apy:3.45, maturity:"2027-01-13", balance:36559 },
   { id:"cd3", bank:"Bank of America", tag:"AD", apy:3.45, maturity:"2027-02-18", balance:55503 },
   { id:"cd4", bank:"Bank of America", tag:"AD", apy:3.70, maturity:"2027-05-09", balance:30343 },
 ];
+const ALERT_WARN_DAYS = 30, ALERT_INFO_DAYS = 60;
 
+/* ---------- storage (fails safe) ---------- */
+const store = {
+  get(k, s=localStorage){ try{ return JSON.parse(s.getItem(k)); }catch(e){ return null; } },
+  set(k, v, s=localStorage){ try{ s.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k, s=localStorage){ try{ s.removeItem(k); }catch(e){} },
+};
+let ss; try{ ss = sessionStorage; }catch(e){ ss = null; }
+
+let data = store.get("cdp.data") || { cds: structuredClone(DEFAULT_CDS), renewals: [] };
+const save = () => store.set("cdp.data", data);
+
+/* ---------- helpers ---------- */
 const usd = n => n.toLocaleString("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2});
 const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y,m-1,d); };
 const fmtDate = s => { const d = parse(s); return `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`; };
-const today = () => { const t = new Date(); return new Date(t.getFullYear(),t.getMonth(),t.getDate()); };
-const daysLeft = s => Math.max(0, Math.round((parse(s) - today())/86400000));
+const isoToday = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; };
+const today = () => parse(isoToday());
+const daysLeft = s => Math.round((parse(s) - today())/86400000);
 const title = c => `${c.bank} CD (${c.tag}; ${c.apy.toFixed(2)}%; ${fmtDate(c.maturity)})`;
-const estInterest = c => c.balance * (c.apy/100) * daysLeft(c.maturity) / 365;
+const annualInt = c => c.balance * c.apy / 100;
+const intToMaturity = c => c.balance * (c.apy/100) * Math.max(0,daysLeft(c.maturity)) / 365;
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const total = () => data.cds.reduce((a,c)=>a+c.balance,0);
+const byMaturity = () => [...data.cds].sort((a,b)=>parse(a.maturity)-parse(b.maturity));
 
-function listView(){
-  const total = CDS.reduce((a,c)=>a+c.balance,0);
-  const sorted = [...CDS].sort((a,b)=>parse(a.maturity)-parse(b.maturity));
-  const wApy = CDS.reduce((a,c)=>a+c.apy*c.balance,0)/total;
-  const next = sorted[0];
+function status(c){
+  const d = daysLeft(c.maturity);
+  if (d <= 0)              return { level:"due",  text: d===0 ? "Matures today" : `Matured ${-d} day${-d===1?"":"s"} ago` };
+  if (d <= ALERT_WARN_DAYS) return { level:"warn", text:`Matures in ${d} day${d===1?"":"s"}` };
+  if (d <= ALERT_INFO_DAYS) return { level:"info", text:`Matures in ${d} days` };
+  return null;
+}
+const alerts = () => byMaturity().map(c=>({c, s:status(c)})).filter(x=>x.s);
+
+/* ---------- password lock ---------- */
+async function hash(pw){
+  const salted = "cdp:" + pw;
+  if (window.crypto && crypto.subtle){
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salted));
+    return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+  let h = 2166136261; for (const ch of salted){ h ^= ch.charCodeAt(0); h = Math.imul(h,16777619); } return "f" + (h>>>0).toString(16);
+}
+const pwHash = () => store.get("cdp.pw");
+const unlocked = () => ss ? store.get("cdp.unlocked", ss) === true : window.__unlocked === true;
+const setUnlocked = v => { window.__unlocked = v; if (ss) v ? store.set("cdp.unlocked", true, ss) : store.del("cdp.unlocked", ss); };
+
+function lockView(){
+  const first = !pwHash();
+  return `
+  <div class="lock-wrap"><div class="card lock"><div class="inner">
+    <h2>My CD Portfolio</h2>
+    <p>${first ? "Create a password to protect this page." : "Enter your password to continue."}</p>
+    <form id="lockForm" autocomplete="off">
+      <input type="password" id="pw1" placeholder="Password" required autofocus>
+      ${first ? `<input type="password" id="pw2" placeholder="Confirm password" required>` : ""}
+      <button class="btn" type="submit">${first ? "Set password" : "Unlock"}</button>
+      <div class="err" id="lockErr" style="margin-top:10px"></div>
+    </form>
+  </div></div></div>`;
+}
+function bindLock(){
+  document.getElementById("lockForm").onsubmit = async e => {
+    e.preventDefault();
+    const pw1 = document.getElementById("pw1").value, pw2el = document.getElementById("pw2");
+    const err = document.getElementById("lockErr");
+    if (pw2el){
+      if (pw1.length < 4) return err.textContent = "Use at least 4 characters.";
+      if (pw1 !== pw2el.value) return err.textContent = "Passwords do not match.";
+      store.set("cdp.pw", await hash(pw1));
+    } else if (await hash(pw1) !== pwHash()){
+      return err.textContent = "Incorrect password.";
+    }
+    setUnlocked(true); render();
+  };
+}
+
+/* ---------- layout ---------- */
+function shell(route, body, wide){
+  const n = alerts().length;
+  const link = (h, label, key) => `<a href="${h}" class="${route===key?"active":""}">${label}</a>`;
+  return `
+  <header><div class="nav">
+    <div class="brand">My CD Portfolio<small>Personal CD tracker</small></div>
+    ${link("#/","Accounts","home")}
+    ${link("#/alerts",`Alerts${n?`<span class="badge">${n}</span>`:""}`,"alerts")}
+    ${link("#/interest","Interest","interest")}
+    ${link("#/renewals","Renewals","renewals")}
+    ${link("#/settings","Settings","settings")}
+    <span class="spacer"></span>
+    <button class="btn ghost small" id="lockBtn">Lock</button>
+  </div></header>
+  <main class="${wide?"wide":""}">${body}</main>`;
+}
+
+function alertBox(list, compact){
+  return list.map(({c,s})=>`
+    <div class="alert ${s.level}"><span class="dot"></span><span>
+      <b>${s.text}</b>
+      <a href="#/cd/${c.id}">${esc(title(c))}</a> · ${usd(c.balance)}
+      ${compact ? "" : `<br>${s.level==="due" ? "Record the renewal or withdrawal for this CD." : "Decide whether to renew or withdraw before the maturity date."}`}
+    </span></div>`).join("");
+}
+
+/* ---------- views ---------- */
+function homeView(){
+  const t = total(), sorted = byMaturity();
+  const wApy = data.cds.reduce((a,c)=>a+c.apy*c.balance,0)/t;
+  const urgent = alerts().filter(x=>x.s.level!=="info");
   return `
   <section>
     <h1>Accounts</h1>
+    ${urgent.length ? alertBox(urgent, true) : ""}
     <div class="card">
-      <div class="card-head"><h2>Certificates of Deposit</h2><span class="amt">${usd(total)}</span></div>
+      <div class="card-head"><h2>Certificates of Deposit</h2><span class="amt">${usd(t)}</span></div>
       <div class="group">
-        <div class="group-title">${esc(CDS[0].bank)}</div>
-        ${CDS.map(c=>`
+        <div class="group-title">${esc(data.cds[0]?.bank || "")}</div>
+        ${data.cds.map(c=>{ const s = status(c); return `
           <div class="row" onclick="location.hash='#/cd/${c.id}'">
-            <span><a href="#/cd/${c.id}">${esc(title(c))}</a>
-              <span class="sub">APY ${c.apy.toFixed(2)}% · Matures ${fmtDate(c.maturity)} · ${daysLeft(c.maturity)} days left</span></span>
+            <span><a href="#/cd/${c.id}">${esc(title(c))}</a>${s?`<span class="pill ${s.level}">${s.text}</span>`:""}
+              <span class="sub">APY ${c.apy.toFixed(2)}% · Matures ${fmtDate(c.maturity)} · ${Math.max(0,daysLeft(c.maturity))} days left</span></span>
             <span class="bal">${usd(c.balance)}</span>
-          </div>`).join("")}
+          </div>`;}).join("")}
       </div>
     </div>
   </section>
   <aside class="side">
     <div class="card">
       <h3>Summary</h3>
-      <div class="kv"><span>Number of CDs</span><span>${CDS.length}</span></div>
-      <div class="kv"><span>Total balance</span><span>${usd(total)}</span></div>
+      <div class="kv"><span>Number of CDs</span><span>${data.cds.length}</span></div>
+      <div class="kv"><span>Total balance</span><span>${usd(t)}</span></div>
       <div class="kv"><span>Weighted avg. APY</span><span>${wApy.toFixed(2)}%</span></div>
-      <div class="kv"><span>Next maturity</span><span>${fmtDate(next.maturity)}</span></div>
+      <div class="kv"><span>Est. annual interest</span><span>${usd(data.cds.reduce((a,c)=>a+annualInt(c),0))}</span></div>
+      <div class="kv"><span>Next maturity</span><span>${fmtDate(sorted[0].maturity)}</span></div>
     </div>
     <div class="card">
       <h3>Maturity schedule</h3>
@@ -123,11 +250,13 @@ function listView(){
 }
 
 function detailView(c){
-  const total = CDS.reduce((a,x)=>a+x.balance,0);
-  const share = c.balance/total*100;
+  const share = c.balance/total()*100;
+  const hist = data.renewals.filter(r=>r.cdId===c.id).slice().reverse();
+  const s = status(c);
   return `
   <section>
     <a class="back" href="#/">‹ Back to Accounts</a>
+    ${s ? alertBox([{c,s}]) : ""}
     <div class="card">
       <div class="card-head"><h2>${esc(title(c))}</h2></div>
       <div class="hero">
@@ -138,6 +267,8 @@ function detailView(c){
       <div class="tabs">
         <button class="on" data-t="details">Details</button>
         <button data-t="interest">Interest</button>
+        <button data-t="renew">Record renewal</button>
+        <button data-t="history">Renewal history${hist.length?` (${hist.length})`:""}</button>
       </div>
       <div class="panel" id="p-details">
         <div class="kv"><span>Account type</span><span>Certificate of Deposit</span></div>
@@ -145,23 +276,37 @@ function detailView(c){
         <div class="kv"><span>Label</span><span>${esc(c.tag)}</span></div>
         <div class="kv"><span>Annual Percentage Yield (APY)</span><span>${c.apy.toFixed(2)}%</span></div>
         <div class="kv"><span>Maturity date</span><span>${fmtDate(c.maturity)}</span></div>
-        <div class="kv"><span>Days until maturity</span><span>${daysLeft(c.maturity)}</span></div>
+        <div class="kv"><span>Days until maturity</span><span>${Math.max(0,daysLeft(c.maturity))}</span></div>
         <div class="kv"><span>Current balance</span><span>${usd(c.balance)}</span></div>
         <div class="kv"><span>Share of CD portfolio</span><span>${share.toFixed(1)}%</span></div>
         <div class="bar"><i style="width:${share.toFixed(1)}%"></i></div>
       </div>
       <div class="panel" id="p-interest" hidden>
-        <div class="kv"><span>Est. annual interest</span><span>${usd(c.balance*c.apy/100)}</span></div>
-        <div class="kv"><span>Est. interest from today to maturity</span><span>${usd(estInterest(c))}</span></div>
-        <div class="kv"><span>Est. value at maturity</span><span>${usd(c.balance+estInterest(c))}</span></div>
-        <div class="note">估算值：按当前余额 × APY × 剩余天数 / 365 计算，仅供参考；实际利息以银行记录为准。</div>
+        <div class="kv"><span>Est. annual interest</span><span>${usd(annualInt(c))}</span></div>
+        <div class="kv"><span>Est. monthly interest</span><span>${usd(annualInt(c)/12)}</span></div>
+        <div class="kv"><span>Est. interest from today to maturity</span><span>${usd(intToMaturity(c))}</span></div>
+        <div class="kv"><span>Est. value at maturity</span><span>${usd(c.balance+intToMaturity(c))}</span></div>
+        <div class="note">Estimates use current balance × APY × days remaining / 365. Actual interest depends on the bank's compounding and crediting schedule.</div>
+      </div>
+      <div class="panel" id="p-renew" hidden>
+        <form class="f" id="renewForm">
+          <label>Renewal date<input type="date" name="date" value="${c.maturity}" required></label>
+          <label>New APY (%)<input type="number" name="apy" step="0.01" min="0" value="${c.apy.toFixed(2)}" required></label>
+          <label>New maturity date<input type="date" name="maturity" required></label>
+          <label>New balance ($)<input type="number" name="balance" step="0.01" min="0" value="${(c.balance+intToMaturity(c)).toFixed(2)}" required></label>
+          <label style="grid-column:1/-1">Note<input type="text" name="note" placeholder="Optional, e.g. renewed for 7 months"></label>
+          <div class="actions"><button class="btn" type="submit">Save renewal</button><span id="renewMsg"></span></div>
+        </form>
+      </div>
+      <div class="panel" id="p-history" hidden>
+        ${hist.length ? historyTable(hist, false) : `<div class="empty">No renewals recorded for this CD yet.</div>`}
       </div>
     </div>
   </section>
   <aside class="side">
     <div class="card">
       <h3>Other CDs</h3>
-      ${CDS.filter(x=>x.id!==c.id).map(x=>`
+      ${data.cds.filter(x=>x.id!==c.id).map(x=>`
         <div class="kv" style="cursor:pointer" onclick="location.hash='#/cd/${x.id}'">
           <span><a href="#/cd/${x.id}" style="color:var(--link);text-decoration:none">${x.apy.toFixed(2)}% · ${fmtDate(x.maturity)}</a></span>
           <span>${usd(x.balance)}</span></div>`).join("")}
@@ -169,15 +314,158 @@ function detailView(c){
   </aside>`;
 }
 
+function alertsView(){
+  const list = alerts();
+  const upcoming = byMaturity().filter(c=>!status(c));
+  return `
+  <section>
+    <h1>Maturity alerts</h1>
+    ${list.length ? alertBox(list) : `<div class="card"><div class="empty">No CDs are maturing in the next ${ALERT_INFO_DAYS} days.</div></div>`}
+    <div class="card">
+      <h3>Later maturities</h3>
+      ${upcoming.length ? upcoming.map(c=>`<div class="kv"><span><a href="#/cd/${c.id}" style="color:var(--link);text-decoration:none">${esc(title(c))}</a></span><span>${daysLeft(c.maturity)} days</span></div>`).join("")
+        : `<div class="empty">None.</div>`}
+    </div>
+  </section>
+  <aside class="side">
+    <div class="card">
+      <h3>Alert rules</h3>
+      <div class="kv"><span><span class="pill due">Due</span></span><span>Matured or matures today</span></div>
+      <div class="kv"><span><span class="pill warn">Soon</span></span><span>Within ${ALERT_WARN_DAYS} days</span></div>
+      <div class="kv"><span><span class="pill info">Upcoming</span></span><span>Within ${ALERT_INFO_DAYS} days</span></div>
+    </div>
+  </aside>`;
+}
+
+function interestView(){
+  const cds = byMaturity();
+  const sum = f => cds.reduce((a,c)=>a+f(c),0);
+  const t = total();
+  return `
+  <section>
+    <h1>Interest summary</h1>
+    <div class="card">
+      <div class="card-head"><h2>Estimated interest by CD</h2><span class="amt">${usd(sum(intToMaturity))}</span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>CD</th><th>Balance</th><th>APY</th><th>Annual</th><th>Monthly</th><th>To maturity</th><th>Value at maturity</th></tr></thead>
+        <tbody>${cds.map(c=>`<tr>
+          <td><a href="#/cd/${c.id}">${c.apy.toFixed(2)}% · ${fmtDate(c.maturity)}</a></td>
+          <td>${usd(c.balance)}</td><td>${c.apy.toFixed(2)}%</td><td>${usd(annualInt(c))}</td>
+          <td>${usd(annualInt(c)/12)}</td><td>${usd(intToMaturity(c))}</td><td>${usd(c.balance+intToMaturity(c))}</td></tr>`).join("")}
+        </tbody>
+        <tfoot><tr><td>Total</td><td>${usd(t)}</td><td>${(sum(c=>c.apy*c.balance)/t).toFixed(2)}%</td>
+          <td>${usd(sum(annualInt))}</td><td>${usd(sum(annualInt)/12)}</td><td>${usd(sum(intToMaturity))}</td><td>${usd(t+sum(intToMaturity))}</td></tr></tfoot>
+      </table></div>
+      <div class="note">Estimates use current balance × APY × days remaining / 365. The total APY is weighted by balance.</div>
+    </div>
+  </section>`;
+}
+
+function historyTable(rows, withCd){
+  return `<div class="tbl-wrap"><table>
+    <thead><tr>${withCd?"<th>CD</th>":""}<th${withCd?"":' style="text-align:left"'}>Renewed</th><th>Old APY</th><th>New APY</th><th>Old maturity</th><th>New maturity</th><th>Old balance</th><th>New balance</th><th style="text-align:left">Note</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      ${withCd?`<td><a href="#/cd/${r.cdId}">${esc((c=>c?`${c.bank} CD (${c.tag})`:r.cdId)(data.cds.find(x=>x.id===r.cdId)))}</a></td>`:""}
+      <td${withCd?"":' style="text-align:left"'}>${fmtDate(r.date)}</td><td>${r.oldApy.toFixed(2)}%</td><td>${r.newApy.toFixed(2)}%</td>
+      <td>${fmtDate(r.oldMaturity)}</td><td>${fmtDate(r.newMaturity)}</td><td>${usd(r.oldBalance)}</td><td>${usd(r.newBalance)}</td>
+      <td style="text-align:left;white-space:normal">${esc(r.note||"")}</td></tr>`).join("")}</tbody>
+  </table></div>`;
+}
+
+function renewalsView(){
+  const rows = data.renewals.slice().reverse();
+  return `
+  <section>
+    <h1>Renewal records</h1>
+    <div class="card">
+      <div class="card-head"><h2>All renewals</h2><span class="amt">${rows.length}</span></div>
+      ${rows.length ? historyTable(rows, true) : `<div class="empty">No renewals recorded yet. Open a CD and use the “Record renewal” tab when it matures.</div>`}
+    </div>
+  </section>`;
+}
+
+function settingsView(){
+  return `
+  <section>
+    <h1>Settings</h1>
+    <div class="card">
+      <h3>Change password</h3>
+      <form class="f" id="pwForm" autocomplete="off">
+        <label>Current password<input type="password" name="cur" required></label>
+        <label>New password<input type="password" name="n1" required></label>
+        <label>Confirm new password<input type="password" name="n2" required></label>
+        <div class="actions"><button class="btn" type="submit">Update password</button><span id="pwMsg"></span></div>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Data</h3>
+      <div class="note" style="padding-top:4px">Data and renewal records are saved in this browser only. Resetting restores the original four CDs and clears renewal records.</div>
+      <div style="padding:0 20px 18px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn ghost" id="exportBtn">Export data (JSON)</button>
+        <button class="btn ghost" id="resetBtn">Reset data</button>
+      </div>
+    </div>
+  </section>`;
+}
+
+/* ---------- router ---------- */
 function render(){
-  const app = document.getElementById("app");
-  const m = location.hash.match(/^#\/cd\/(\w+)/);
-  const cd = m && CDS.find(c=>c.id===m[1]);
-  app.innerHTML = cd ? detailView(cd) : listView();
-  app.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
-    app.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));
-    app.querySelectorAll(".panel").forEach(p=>p.hidden = p.id!=="p-"+b.dataset.t);
+  const root = document.getElementById("root");
+  if (!unlocked()){ root.innerHTML = lockView(); bindLock(); return; }
+
+  const h = location.hash;
+  let m, html, route = "home", wide = false;
+  if ((m = h.match(/^#\/cd\/(\w+)/)) && data.cds.find(c=>c.id===m[1])) html = detailView(data.cds.find(c=>c.id===m[1]));
+  else if (h === "#/alerts")   { html = alertsView();   route = "alerts"; }
+  else if (h === "#/interest") { html = interestView(); route = "interest"; wide = true; }
+  else if (h === "#/renewals") { html = renewalsView(); route = "renewals"; wide = true; }
+  else if (h === "#/settings") { html = settingsView(); route = "settings"; wide = true; }
+  else html = homeView();
+  root.innerHTML = shell(route, html, wide);
+
+  document.getElementById("lockBtn").onclick = () => { setUnlocked(false); render(); };
+
+  root.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+    root.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));
+    root.querySelectorAll(".panel").forEach(p=>p.hidden = p.id!=="p-"+b.dataset.t);
   });
+
+  const rf = document.getElementById("renewForm");
+  if (rf) rf.onsubmit = e => {
+    e.preventDefault();
+    const c = data.cds.find(x=>x.id===m[1]), f = new FormData(rf), msg = document.getElementById("renewMsg");
+    const newMat = f.get("maturity");
+    if (parse(newMat) <= parse(f.get("date"))){ msg.className="err"; msg.textContent="New maturity must be after the renewal date."; return; }
+    data.renewals.push({ cdId:c.id, date:f.get("date"), oldApy:c.apy, newApy:+f.get("apy"),
+      oldMaturity:c.maturity, newMaturity:newMat, oldBalance:c.balance, newBalance:+f.get("balance"), note:f.get("note").trim() });
+    Object.assign(c, { apy:+f.get("apy"), maturity:newMat, balance:+f.get("balance") });
+    save(); render();
+    root.querySelector('.tabs button[data-t="history"]').click();
+  };
+
+  const pf = document.getElementById("pwForm");
+  if (pf) pf.onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(pf), msg = document.getElementById("pwMsg");
+    msg.className = "err";
+    if (await hash(f.get("cur")) !== pwHash()) return msg.textContent = "Current password is incorrect.";
+    if (f.get("n1").length < 4) return msg.textContent = "Use at least 4 characters.";
+    if (f.get("n1") !== f.get("n2")) return msg.textContent = "New passwords do not match.";
+    store.set("cdp.pw", await hash(f.get("n1")));
+    pf.reset(); msg.className = "msg"; msg.textContent = "Password updated.";
+  };
+
+  const rb = document.getElementById("resetBtn");
+  if (rb) rb.onclick = () => {
+    if (!confirm("Reset all CD data and clear renewal records?")) return;
+    data = { cds: structuredClone(DEFAULT_CDS), renewals: [] }; save(); location.hash = "#/";  render();
+  };
+  const eb = document.getElementById("exportBtn");
+  if (eb) eb.onclick = () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
+    a.download = `cd-portfolio-${isoToday()}.json`; a.click();
+  };
   window.scrollTo(0,0);
 }
 window.addEventListener("hashchange", render);
